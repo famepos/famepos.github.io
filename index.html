@@ -5,62 +5,70 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FamePOS</title>
 
-<link rel="icon" type="image/png" href="https://i.postimg.cc/SxGCt9N2/logo.png">
-<link rel="apple-touch-icon" href="https://i.postimg.cc/SxGCt9N2/logo.png">
+  <link rel="icon" type="image/png" href="https://i.postimg.cc/SxGCt9N2/logo.png">
+  <link rel="apple-touch-icon" href="https://i.postimg.cc/SxGCt9N2/logo.png">
+
   <style>
     body {
       margin: 0;
-      background: #000; /* พื้นหลังสีดำ */
+      background: #000; /* พื้นหลังสีดำดูพรีเมียม */
       color: white;
       display: flex;
       align-items: center;
       justify-content: center;
       height: 100vh;
       font-family: sans-serif;
+      overflow: hidden;
     }
     .splash-container {
       text-align: center;
-      animation: fade 1s ease-in-out;
+      animation: fade 1.2s ease-in-out;
       display: flex;
       flex-direction: column;
       align-items: center;
     }
-    /* 🌟 จัดการขนาดและความสวยงามของรููปโลโก้ */
+    /* 🌟 ส่วนที่ 2: จัดการรูปโลโก้ให้สวยงาม */
     .app-logo {
-      width: 100px; /* ปรับขนาดความกว้างโลโก้ตรงนี้ได้ครับ */
-      height: 100px;
+      width: 120px; /* ขนาดโลโก้หน้าโหลด */
+      height: 120px;
       object-fit: contain;
-      margin-bottom: 15px; /* ระยะห่างระหว่างรูปกับตัวหนังสือ */
-      border-radius: 20px; /* ทำให้มุมรูปโค้งมนนิดๆ */
-      box-shadow: 0 4px 15px rgba(255, 77, 77, 0.2); /* เพิ่มเงาสีแดงจางๆ ให้ดูมีมิติ */
+      margin-bottom: 20px;
+      border-radius: 25px; /* มุมโค้งมน */
+      box-shadow: 0 10px 25px rgba(255, 77, 77, 0.3); /* เงาสีแดงจางๆ */
     }
     h1 {
-      margin: 0 0 5px 0;
-      font-size: 24px;
-      letter-spacing: 1px;
+      margin: 0 0 8px 0;
+      font-size: 28px;
+      letter-spacing: 2px;
+      font-weight: bold;
     }
     p {
       margin: 0;
-      color: #888;
+      color: #aaaaaa;
       font-size: 14px;
+      font-style: italic;
     }
+    /* เอฟเฟกต์ค่อยๆ ปรากฏตอนโหลด */
     @keyframes fade {
-      from { opacity: 0; transform: translateY(10px); }
+      from { opacity: 0; transform: translateY(20px); }
       to { opacity: 1; transform: translateY(0); }
     }
   </style>
 
   <script>
+    // 🌟 ส่วนที่ 3: ตั้งเวลาเด้งไปยังหน้าแอปหลัก (Google Apps Script)
     setTimeout(() => {
       window.location.href = "https://script.google.com/macros/s/AKfycbxRNI-wpzdKv4RVxyZgcx9CaWgPEm8DSgfScowBjt4rXMyZnjTr_HASSFORe5tKnA/exec";
-    }, 1200);
+    }, 1200); // 1.2 วินาที
   </script>
 </head>
 <body>
+
   <div class="splash-container">
-<img src="https://i.postimg.cc/SxGCt9N2/logo.png" alt="FamePOS Logo" class="app-logo">
+    <img src="https://i.postimg.cc/SxGCt9N2/logo.png" alt="FamePOS Logo" class="app-logo">
     <h1>FamePOS</h1>
-    <p>กำลังโหลด...</p>
+    <p>กำลังเข้าสู่ระบบ...</p>
   </div>
+
 </body>
 </html>
