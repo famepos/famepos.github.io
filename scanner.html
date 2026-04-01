@@ -30,13 +30,15 @@
     let availableCameras = [];
     let currentCameraIndex = 0;
 
-    // ตั้งค่ากรอบสแกนแนวนอน และระบุประเภทบาร์โค้ด
+    // 🔥 เปิดโหมดเทอร์โบ และตั้งค่าการสแกน
     const config = { 
-      fps: 15, 
+      fps: 20, 
       qrbox: { width: 280, height: 120 },
-      aspectRatio: 1.0,
+      experimentalFeatures: {
+        useBarCodeDetectorIfSupported: true // 🌟 ฟีเจอร์ลับ! ดึง Hardware มือถือมาช่วยอ่านขวดโค้งๆ
+      },
       formatsToSupport: [ 
-        Html5QrcodeSupportedFormats.EAN_13,
+        Html5QrcodeSupportedFormats.EAN_13, // EAN-13 ของขวด Oriental Princess
         Html5QrcodeSupportedFormats.EAN_8,
         Html5QrcodeSupportedFormats.CODE_128, 
         Html5QrcodeSupportedFormats.CODE_39, 
@@ -45,28 +47,22 @@
       ]
     };
 
-    // เริ่มทำงานเมื่อเปิดหน้าเว็บ
     html5QrCode = new Html5Qrcode("reader");
 
     Html5Qrcode.getCameras().then(devices => {
       if (devices && devices.length > 0) {
         availableCameras = devices;
         
-        // พยายามหากล้องหลังให้เจอเป็นค่าเริ่มต้น
+        // หากล้องหลัง
         let backCameraIndex = devices.findIndex(d => 
           d.label.toLowerCase().includes('back') || 
           d.label.toLowerCase().includes('environment')
         );
-        
-        if (backCameraIndex !== -1) {
-          currentCameraIndex = backCameraIndex;
-        }
+        if (backCameraIndex !== -1) currentCameraIndex = backCameraIndex;
 
-        // ถ้ามีกล้องมากกว่า 1 ตัว ให้แสดงปุ่ม "สลับกล้อง"
         if (devices.length > 1) {
           document.getElementById('btn-switch').style.display = 'block';
         }
-
         startScanner();
       } else {
         document.getElementById('reader').innerHTML = '<p style="text-align:center;">ไม่พบกล้องบนอุปกรณ์นี้</p>';
@@ -75,10 +71,9 @@
       document.getElementById('reader').innerHTML = '<p style="color:red; text-align:center;">กรุณาอนุญาตสิทธิ์กล้องบนเบราว์เซอร์</p>';
     });
 
-    // ฟังก์ชันสั่งเริ่มกล้อง
     function startScanner() {
       html5QrCode.start(
-        availableCameras[currentCameraIndex].id, // ใช้ ID กล้องตรงๆ แก้อาการเอ๋อของ iPhone
+        availableCameras[currentCameraIndex].id,
         config,
         (decodedText) => {
           if (window.opener) {
@@ -89,14 +84,10 @@
       ).catch(err => console.log(err));
     }
 
-    // ฟังก์ชันกดสลับกล้อง
     function switchCamera() {
       if (availableCameras.length > 1) {
-        // ปิดกล้องเดิมก่อน
         html5QrCode.stop().then(() => {
-          // สลับ Index ไปกล้องตัวถัดไป
           currentCameraIndex = (currentCameraIndex + 1) % availableCameras.length;
-          // เปิดกล้องใหม่
           startScanner();
         }).catch(err => console.error(err));
       }
