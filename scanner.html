@@ -3,72 +3,104 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>สแกนบาร์โค้ด (กล้องหลัง)</title>
+  <title>สแกนบาร์โค้ด</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
     body { margin: 0; background: #111; color: white; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-    #reader { flex: 1; width: 100%; background: #000; }
-    .btn-close { padding: 15px; background: #ef4444; color: white; border: none; font-size: 16px; font-weight: bold; cursor: pointer; }
+    #reader { flex: 1; width: 100%; background: #000; display: flex; justify-content: center; align-items: center; }
     .header { padding: 15px; text-align: center; font-weight: bold; font-size: 18px; background: #222; color: #10b981; }
+    .controls { display: flex; padding: 10px; gap: 10px; background: #222; padding-bottom: 25px; }
+    .btn { flex: 1; padding: 15px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; border-radius: 8px; }
+    .btn-switch { background: #3b82f6; color: white; display: none; }
+    .btn-close { background: #ef4444; color: white; }
   </style>
 </head>
 <body>
-  <div class="header">📷 ระบบสแกนกล้องหลัง</div>
+  <div class="header">📷 สแกนบาร์โค้ดสินค้า</div>
+  
   <div id="reader"></div>
-  <button class="btn-close" onclick="window.close()">❌ ปิดหน้าต่างสแกน</button>
+  
+  <div class="controls">
+    <button id="btn-switch" class="btn btn-switch" onclick="switchCamera()">🔄 สลับกล้อง</button>
+    <button class="btn btn-close" onclick="window.close()">❌ ปิดหน้าต่าง</button>
+  </div>
 
   <script>
-    const html5QrCode = new Html5Qrcode("reader");
-    
-    // ตั้งค่า Config การสแกน
+    let html5QrCode;
+    let availableCameras = [];
+    let currentCameraIndex = 0;
+
+    // ตั้งค่ากรอบสแกนแนวนอน และระบุประเภทบาร์โค้ด
     const config = { 
       fps: 15, 
-      qrbox: { width: 280, height: 150 }, // กรอบสแกนแนวนอนสำหรับบาร์โค้ด
-      aspectRatio: 1.0
+      qrbox: { width: 280, height: 120 },
+      aspectRatio: 1.0,
+      formatsToSupport: [ 
+        Html5QrcodeSupportedFormats.EAN_13,
+        Html5QrcodeSupportedFormats.EAN_8,
+        Html5QrcodeSupportedFormats.CODE_128, 
+        Html5QrcodeSupportedFormats.CODE_39, 
+        Html5QrcodeSupportedFormats.UPC_A, 
+        Html5QrcodeSupportedFormats.QR_CODE 
+      ]
     };
 
-    // ฟังก์ชันเริ่มสแกน
-    function startCamera() {
-      // 🌟 ใช้ facingMode: "environment" เพื่อบังคับเปิดกล้องหลัง
+    // เริ่มทำงานเมื่อเปิดหน้าเว็บ
+    html5QrCode = new Html5Qrcode("reader");
+
+    Html5Qrcode.getCameras().then(devices => {
+      if (devices && devices.length > 0) {
+        availableCameras = devices;
+        
+        // พยายามหากล้องหลังให้เจอเป็นค่าเริ่มต้น
+        let backCameraIndex = devices.findIndex(d => 
+          d.label.toLowerCase().includes('back') || 
+          d.label.toLowerCase().includes('environment')
+        );
+        
+        if (backCameraIndex !== -1) {
+          currentCameraIndex = backCameraIndex;
+        }
+
+        // ถ้ามีกล้องมากกว่า 1 ตัว ให้แสดงปุ่ม "สลับกล้อง"
+        if (devices.length > 1) {
+          document.getElementById('btn-switch').style.display = 'block';
+        }
+
+        startScanner();
+      } else {
+        document.getElementById('reader').innerHTML = '<p style="text-align:center;">ไม่พบกล้องบนอุปกรณ์นี้</p>';
+      }
+    }).catch(err => {
+      document.getElementById('reader').innerHTML = '<p style="color:red; text-align:center;">กรุณาอนุญาตสิทธิ์กล้องบนเบราว์เซอร์</p>';
+    });
+
+    // ฟังก์ชันสั่งเริ่มกล้อง
+    function startScanner() {
       html5QrCode.start(
-        { facingMode: "environment" }, 
+        availableCameras[currentCameraIndex].id, // ใช้ ID กล้องตรงๆ แก้อาการเอ๋อของ iPhone
         config,
         (decodedText) => {
-          // เมื่อสแกนสำเร็จ
-          if(window.opener) {
+          if (window.opener) {
             window.opener.postMessage({ type: 'BARCODE_SCANNED', code: decodedText }, '*');
           }
           html5QrCode.stop().then(() => window.close());
         }
-      ).catch(err => {
-        // กรณี facingMode ใช้ไม่ได้ (เช่น บนคอม) ให้ดึงรายการกล้องมาเลือกอันแรกแทน
-        console.error("facingMode Error: ", err);
-        fallbackStart();
-      });
+      ).catch(err => console.log(err));
     }
 
-    function fallbackStart() {
-      Html5Qrcode.getCameras().then(devices => {
-        if (devices && devices.length) {
-          // หากล้องที่มีคำว่า 'back' หรือ 'environment' ในชื่อ
-          const backCam = devices.find(d => 
-            d.label.toLowerCase().includes('back') || 
-            d.label.toLowerCase().includes('environment')
-          );
-          const cameraId = backCam ? backCam.id : devices[0].id;
-          
-          html5QrCode.start(cameraId, config, (decodedText) => {
-            if(window.opener) {
-              window.opener.postMessage({ type: 'BARCODE_SCANNED', code: decodedText }, '*');
-            }
-            html5QrCode.stop().then(() => window.close());
-          });
-        }
-      });
+    // ฟังก์ชันกดสลับกล้อง
+    function switchCamera() {
+      if (availableCameras.length > 1) {
+        // ปิดกล้องเดิมก่อน
+        html5QrCode.stop().then(() => {
+          // สลับ Index ไปกล้องตัวถัดไป
+          currentCameraIndex = (currentCameraIndex + 1) % availableCameras.length;
+          // เปิดกล้องใหม่
+          startScanner();
+        }).catch(err => console.error(err));
+      }
     }
-
-    // เริ่มทำงาน
-    startCamera();
   </script>
 </body>
 </html>
