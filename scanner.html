@@ -3,41 +3,72 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>สแกนบาร์โค้ด</title>
+  <title>สแกนบาร์โค้ด (กล้องหลัง)</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
-    body { margin: 0; background: #111; color: white; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; }
-    #reader { flex: 1; width: 100%; display: flex; align-items: center; justify-content: center; background: #000; }
-    .btn-close { padding: 15px; background: #ef4444; color: white; border: none; font-size: 16px; font-weight: bold; cursor: pointer; text-align: center; }
+    body { margin: 0; background: #111; color: white; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+    #reader { flex: 1; width: 100%; background: #000; }
+    .btn-close { padding: 15px; background: #ef4444; color: white; border: none; font-size: 16px; font-weight: bold; cursor: pointer; }
+    .header { padding: 15px; text-align: center; font-weight: bold; font-size: 18px; background: #222; color: #10b981; }
   </style>
 </head>
 <body>
-  <div style="padding: 15px; text-align: center; font-weight: bold; font-size: 18px; background: #222;">📷 กรุณาส่องบาร์โค้ด</div>
+  <div class="header">📷 ระบบสแกนกล้องหลัง</div>
   <div id="reader"></div>
-  <button class="btn-close" onclick="window.close()">❌ ยกเลิกและปิดหน้าต่าง</button>
+  <button class="btn-close" onclick="window.close()">❌ ปิดหน้าต่างสแกน</button>
 
   <script>
     const html5QrCode = new Html5Qrcode("reader");
-    Html5Qrcode.getCameras().then(devices => {
-      if (devices && devices.length) {
-        const backCam = devices.find(d => d.label.toLowerCase().includes('back'));
-        const cameraId = backCam ? backCam.id : devices[0].id;
-        
-        html5QrCode.start(
-          cameraId, 
-          { fps: 10, qrbox: { width: 250, height: 150 } },
-          (decodedText) => {
-            // เมื่อสแกนติด ให้ส่งรหัสกลับไปที่หน้าต่างแม่ (Google Apps Script) ทันที!
+    
+    // ตั้งค่า Config การสแกน
+    const config = { 
+      fps: 15, 
+      qrbox: { width: 280, height: 150 }, // กรอบสแกนแนวนอนสำหรับบาร์โค้ด
+      aspectRatio: 1.0
+    };
+
+    // ฟังก์ชันเริ่มสแกน
+    function startCamera() {
+      // 🌟 ใช้ facingMode: "environment" เพื่อบังคับเปิดกล้องหลัง
+      html5QrCode.start(
+        { facingMode: "environment" }, 
+        config,
+        (decodedText) => {
+          // เมื่อสแกนสำเร็จ
+          if(window.opener) {
             window.opener.postMessage({ type: 'BARCODE_SCANNED', code: decodedText }, '*');
-            html5QrCode.stop().then(() => window.close());
           }
-        ).catch(err => {
-          document.getElementById('reader').innerHTML = '<p style="color:red; text-align:center;">เปิดกล้องไม่ได้ กรุณาอนุญาตสิทธิ์กล้องบนเบราว์เซอร์</p>';
-        });
-      } else {
-        document.getElementById('reader').innerHTML = '<p style="text-align:center;">ไม่พบกล้องบนอุปกรณ์นี้</p>';
-      }
-    });
+          html5QrCode.stop().then(() => window.close());
+        }
+      ).catch(err => {
+        // กรณี facingMode ใช้ไม่ได้ (เช่น บนคอม) ให้ดึงรายการกล้องมาเลือกอันแรกแทน
+        console.error("facingMode Error: ", err);
+        fallbackStart();
+      });
+    }
+
+    function fallbackStart() {
+      Html5Qrcode.getCameras().then(devices => {
+        if (devices && devices.length) {
+          // หากล้องที่มีคำว่า 'back' หรือ 'environment' ในชื่อ
+          const backCam = devices.find(d => 
+            d.label.toLowerCase().includes('back') || 
+            d.label.toLowerCase().includes('environment')
+          );
+          const cameraId = backCam ? backCam.id : devices[0].id;
+          
+          html5QrCode.start(cameraId, config, (decodedText) => {
+            if(window.opener) {
+              window.opener.postMessage({ type: 'BARCODE_SCANNED', code: decodedText }, '*');
+            }
+            html5QrCode.stop().then(() => window.close());
+          });
+        }
+      });
+    }
+
+    // เริ่มทำงาน
+    startCamera();
   </script>
 </body>
 </html>
