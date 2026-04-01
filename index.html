@@ -5,10 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FamePOS</title>
 
+  <link rel="icon" type="image/png" href="https://i.postimg.cc/SxGCt9N2/logo.png">
+  <link rel="apple-touch-icon" href="https://i.postimg.cc/SxGCt9N2/logo.png">
+
   <style>
     body {
       margin: 0;
-      background: #000;
+      background: #000; /* พื้นหลังสีดำ */
       color: white;
       display: flex;
       align-items: center;
@@ -16,13 +19,35 @@
       height: 100vh;
       font-family: sans-serif;
     }
-    .logo {
+    .splash-container {
       text-align: center;
       animation: fade 1s ease-in-out;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    /* 🌟 จัดการขนาดและความสวยงามของรููปโลโก้ */
+    .app-logo {
+      width: 100px; /* ปรับขนาดความกว้างโลโก้ตรงนี้ได้ครับ */
+      height: 100px;
+      object-fit: contain;
+      margin-bottom: 15px; /* ระยะห่างระหว่างรูปกับตัวหนังสือ */
+      border-radius: 20px; /* ทำให้มุมรูปโค้งมนนิดๆ */
+      box-shadow: 0 4px 15px rgba(255, 77, 77, 0.2); /* เพิ่มเงาสีแดงจางๆ ให้ดูมีมิติ */
+    }
+    h1 {
+      margin: 0 0 5px 0;
+      font-size: 24px;
+      letter-spacing: 1px;
+    }
+    p {
+      margin: 0;
+      color: #888;
+      font-size: 14px;
     }
     @keyframes fade {
-      from { opacity: 0 }
-      to { opacity: 1 }
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 
@@ -33,7 +58,8 @@
   </script>
 </head>
 <body>
-  <div class="logo">
+  <div class="splash-container">
+    <img src="https://i.postimg.cc/SxGCt9N2/logo.png" alt="FamePOS Logo" class="app-logo">
     <h1>FamePOS</h1>
     <p>กำลังโหลด...</p>
   </div>
