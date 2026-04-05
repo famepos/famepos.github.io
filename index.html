@@ -90,25 +90,21 @@
     }, 1500);
 
     // ฟังก์ชันเปิดแอปแบบ URL ไม่เปลี่ยน
-// ฟังก์ชันเปิดแอปแบบ URL ไม่เปลี่ยน (ทางเลือก B)
 function launchApp() {
-      // เปิด Popup และกำหนดขนาดให้สวยงาม
-      const popup = window.open(GOOGLE_SCRIPT_URL + "?mode=setup", "FamePOSAuth", "width=500,height=600");
+      // เปิด Popup
+      const popup = window.open(GOOGLE_SCRIPT_URL + "?mode=setup", "FamePOSAuth", "width=500,height=650");
 
-      // ฟังคำสั่งเมื่อ Setup เสร็จ
-      const messageHandler = function(event) {
+      // ฟังคำสั่งเมื่อสร้างไฟล์เสร็จ
+      window.addEventListener('message', function(event) {
         if (event.data === 'setup_complete') {
           const container = document.getElementById('app-container');
           const frame = document.getElementById('famepos-frame');
           
-          frame.src = GOOGLE_SCRIPT_URL; // โหลดหน้าขายเข้า Iframe
+          // โหลดหน้าแอปจริงเข้า Iframe
+          frame.src = GOOGLE_SCRIPT_URL; 
           container.style.display = 'block'; 
-          
-          window.removeEventListener('message', messageHandler); // เลิกฟังเมื่อจบงาน
         }
-      };
-
-      window.addEventListener('message', messageHandler, false);
+      }, false);
     }
   </script>
 
