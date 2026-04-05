@@ -91,21 +91,24 @@
 
     // ฟังก์ชันเปิดแอปแบบ URL ไม่เปลี่ยน
 // ฟังก์ชันเปิดแอปแบบ URL ไม่เปลี่ยน (ทางเลือก B)
-    function launchApp() {
-      // 1. เปิดหน้าต่างเล็ก (Popup) เพื่อให้ Google ยอมให้ลูกค้าล็อกอินและสร้างไฟล์ในเมลเขาเอง
+function launchApp() {
+      // เปิด Popup และกำหนดขนาดให้สวยงาม
       const popup = window.open(GOOGLE_SCRIPT_URL + "?mode=setup", "FamePOSAuth", "width=500,height=600");
 
-      // 2. รอฟังคำสั่งจากหน้าต่าง Popup ว่า "สร้างไฟล์เสร็จแล้วนะ"
-      window.addEventListener('message', function(event) {
+      // ฟังคำสั่งเมื่อ Setup เสร็จ
+      const messageHandler = function(event) {
         if (event.data === 'setup_complete') {
-          // 3. เมื่อสร้างไฟล์เสร็จ หน้าต่าง Popup จะปิดตัวเอง และเราจะดึงแอปจริงมาโชว์ใน Iframe
           const container = document.getElementById('app-container');
           const frame = document.getElementById('famepos-frame');
           
-          frame.src = GOOGLE_SCRIPT_URL; // โหลดหน้าขายของ
-          container.style.display = 'block'; // แสดงผลเต็มหน้าจอ GitHub
+          frame.src = GOOGLE_SCRIPT_URL; // โหลดหน้าขายเข้า Iframe
+          container.style.display = 'block'; 
+          
+          window.removeEventListener('message', messageHandler); // เลิกฟังเมื่อจบงาน
         }
-      }, false);
+      };
+
+      window.addEventListener('message', messageHandler, false);
     }
   </script>
 
