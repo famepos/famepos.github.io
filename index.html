@@ -90,12 +90,10 @@
     }, 1500);
 
     // ฟังก์ชันเปิดแอปแบบ URL ไม่เปลี่ยน
-    function launchApp() {
-      const container = document.getElementById('app-container');
-      const frame = document.getElementById('famepos-frame');
-      
-      frame.src = GOOGLE_SCRIPT_URL; 
-      container.style.display = 'block'; 
+function launchApp() {
+      // แทนที่จะเปิดใน Iframe เราสั่งให้เปิดหน้าต่างใหม่แทน (Popup)
+      // วิธีนี้จะทำให้ Google ยอมให้ล็อกอินและสร้างชีตในเมลลูกค้าได้ครับ
+      window.open(GOOGLE_SCRIPT_URL, '_blank'); 
     }
   </script>
 
