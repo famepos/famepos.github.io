@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-<meta charset="UTF-8">
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>FamePos - ระบบขายหน้าร้าน</title>
   
@@ -23,7 +23,7 @@
       width: 100%;
       overflow: hidden; 
       background-color: #000; 
-      font-family: sans-serif;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
 
     /* 🌟 สไตล์ของ Splash Screen */
@@ -55,7 +55,7 @@
       box-shadow: 0 10px 25px rgba(255, 77, 77, 0.3);
     }
 
-    h1 {
+    #splash-screen h1 {
       margin: 0 0 8px 0;
       font-size: 28px;
       letter-spacing: 2px;
@@ -63,19 +63,63 @@
       color: white;
     }
 
-    p {
+    #splash-screen p {
       margin: 0;
       color: #aaaaaa;
       font-size: 14px;
       font-style: italic;
     }
 
-    /* 🌟 สไตล์ของ iframe (ซ่อนไว้ก่อนโหลดเสร็จ) */
-    #app-frame {
-      width: 100%;
+    /* 🌟 สไตล์ของหน้าหลัก (ปุ่มเข้าแอป) */
+    #main-screen {
+      display: none; /* ซ่อนไว้ก่อนจนกว่า Splash จะจบ */
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
       height: 100%;
-      border: none;
-      display: none;
+      text-align: center;
+      background-color: #fce4e4; /* สีพื้นหลังแอป FamePOS */
+      padding: 20px;
+      box-sizing: border-box;
+      opacity: 0;
+      transition: opacity 0.5s ease-in;
+    }
+
+    #main-screen img {
+      width: 100px;
+      border-radius: 20px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      margin-bottom: 15px;
+    }
+
+    #main-screen h2 {
+      color: #333;
+      margin: 0 0 5px 0;
+      font-size: 24px;
+    }
+
+    #main-screen p {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 30px;
+    }
+
+    .btn-launch {
+      background: #ef4444;
+      color: white;
+      padding: 16px 40px;
+      border-radius: 30px;
+      text-decoration: none;
+      font-size: 18px;
+      font-weight: bold;
+      box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
+      transition: all 0.3s ease;
+      display: inline-block;
+    }
+
+    .btn-launch:hover, .btn-launch:active {
+      background: #dc2626;
+      transform: scale(0.95);
     }
 
     @keyframes fade {
@@ -86,22 +130,25 @@
 
   <script>
     function startApp() {
-      // 1. ตั้งค่าแสดง iframe
-      const frame = document.getElementById('app-frame');
-      frame.style.display = 'block';
-      
-      // 2. ค่อยๆ ซ่อนหน้า Splash Screen
+      // 1. ค่อยๆ ซ่อนหน้า Splash Screen
       const splash = document.getElementById('splash-screen');
       splash.style.opacity = '0';
       
-      // 3. ลบหน้า Splash ออกจากระบบหลังจางหายไปแล้ว
+      // 2. หลังจากจางหายไป ให้แสดงปุ่มเข้าแอปแทน
       setTimeout(() => {
         splash.remove();
-        document.body.style.backgroundColor = '#fce4e4'; // เปลี่ยนสีพื้นหลังตามแอป
+        document.body.style.backgroundColor = '#fce4e4'; 
+        
+        const mainScreen = document.getElementById('main-screen');
+        mainScreen.style.display = 'flex';
+        // ดีเลย์นิดนึงเพื่อให้ transition ทำงานนุ่มนวล
+        setTimeout(() => {
+          mainScreen.style.opacity = '1';
+        }, 50);
       }, 500);
     }
 
-    // เริ่มทำงานหลังจาก 1.5 วินาที (เพื่อให้เห็นอนิเมชั่น)
+    // โชว์ Splash Screen ค้างไว้ 1.5 วินาที
     setTimeout(startApp, 1500);
   </script>
 </head>
@@ -111,15 +158,19 @@
     <div class="splash-container">
       <img src="https://i.postimg.cc/SxGCt9N2/logo.png" alt="FamePOS Logo" class="app-logo">
       <h1>FamePOS</h1>
-      <p>กำลังเข้าสู่ระบบ...</p>
+      <p>กำลังเตรียมระบบอัจฉริยะ...</p>
     </div>
   </div>
 
-  <iframe 
-    id="app-frame" 
-    src="https://script.google.com/macros/s/AKfycbze232QP-U4Z9cXDqVDZW9nnl8pmDy-NDafNWKAH6nfn14eTg4euKEjRLs6lPH1bboV_A/exec"
-    allow="camera *; microphone *; display-capture *; autoplay *;">
-  </iframe>
+  <div id="main-screen">
+    <img src="https://i.postimg.cc/SxGCt9N2/logo.png" alt="FamePOS">
+    <h2>FamePOS</h2>
+    <p>ระบบจัดการหน้าร้าน ยินดีให้บริการ</p>
+    
+    <a href="https://script.google.com/macros/s/AKfycbze232QP-U4Z9cXDqVDZW9nnl8pmDy-NDafNWKAH6nfn14eTg4euKEjRLs6lPH1bboV_A/exec" class="btn-launch">
+      🚀 เข้าสู่ระบบร้านค้า
+    </a>
+  </div>
 
 </body>
 </html>
