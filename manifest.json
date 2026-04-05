@@ -1,20 +1,16 @@
 {
-  "name": "FamePOS ระบบจัดการร้าน",
+  "name": "FamePOS - ระบบขายหน้าร้าน",
   "short_name": "FamePOS",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#fce4e4",
+  "background_color": "#000000",
   "theme_color": "#ef4444",
   "icons": [
     {
       "src": "https://i.postimg.cc/SxGCt9N2/logo.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "https://i.postimg.cc/SxGCt9N2/logo.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
