@@ -47,7 +47,7 @@
       display: none; position: fixed; inset: 0; width: 100%; height: 100%;
       background: white; z-index: 5000;
     }
-    iframe { width: 100%; height: 100%; border: none; }
+    iframe { width: 100%; height: 100%; border: none; background: #fce4e4; }
 
     @keyframes fade { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
   </style>
@@ -66,7 +66,7 @@
     <img src="https://i.postimg.cc/SxGCt9N2/logo.png" style="width: 100px; border-radius: 20px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
     <h2 style="color: #333; margin: 0;">FamePOS</h2>
     <p style="color: #666; margin-bottom: 30px;">ระบบจัดการหน้าร้าน ยินดีให้บริการ</p>
-    <button onclick="launchApp()" class="btn-launch">🚀 เข้าสู่ระบบร้านค้า</button>
+    <button onclick="launchApp()" id="btn-start" class="btn-launch">🚀 เข้าสู่ระบบร้านค้า</button>
   </div>
 
   <div id="app-container">
@@ -74,7 +74,7 @@
   </div>
 
   <script>
-    // 🌟 ลิงก์ Google Script ที่คุณส่งมา
+    // 🌟 ลิงก์ Google Script ของคุณ
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbze232QP-U4Z9cXDqVDZW9nnl8pmDy-NDafNWKAH6nfn14eTg4euKEjRLs6lPH1bboV_A/exec";
 
     // จัดการ Splash Screen
@@ -89,22 +89,25 @@
       }, 500);
     }, 1500);
 
-    // ฟังก์ชันเปิดแอปแบบ URL ไม่เปลี่ยน
-function launchApp() {
-      // เปิด Popup
-      const popup = window.open(GOOGLE_SCRIPT_URL + "?mode=setup", "FamePOSAuth", "width=500,height=650");
+    // ฟังก์ชันเปิดแอปใน Iframe โดยไม่เปลี่ยน URL เว็บ
+    function launchApp() {
+      const container = document.getElementById('app-container');
+      const frame = document.getElementById('famepos-frame');
+      const btn = document.getElementById('btn-start');
 
-      // ฟังคำสั่งเมื่อสร้างไฟล์เสร็จ
-      window.addEventListener('message', function(event) {
-        if (event.data === 'setup_complete') {
-          const container = document.getElementById('app-container');
-          const frame = document.getElementById('famepos-frame');
-          
-          // โหลดหน้าแอปจริงเข้า Iframe
-          frame.src = GOOGLE_SCRIPT_URL; 
-          container.style.display = 'block'; 
-        }
-      }, false);
+      // 1. เปลี่ยนสถานะปุ่มเพื่อบอกให้ผู้ใช้รอ
+      btn.innerHTML = '⏳ กำลังดาวน์โหลดข้อมูล...';
+      btn.style.opacity = '0.7';
+      btn.style.pointerEvents = 'none';
+
+      // 2. สั่งให้ Iframe โหลด URL ของ Google Script
+      frame.src = GOOGLE_SCRIPT_URL; 
+
+      // 3. เมื่อ Iframe โหลดข้อมูลเสร็จ ค่อยแสดงผลเต็มจอ
+      frame.onload = function() {
+        document.getElementById('main-screen').style.display = 'none';
+        container.style.display = 'block';
+      };
     }
   </script>
 
