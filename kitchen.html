@@ -3,64 +3,87 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>KDS - FamePOS (Red-Orange-Pink Tone)</title>
+  <title>KDS - FamePOS (Horizontal View)</title>
   <link rel="icon" type="image/png" href="https://i.postimg.cc/7hH1kcTR/20-(2).png">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
   <style>
-    /* พื้นหลังสีชมพูอ่อนมากๆ */
-    body { font-family: 'Sarabun', sans-serif; background-color: #fff5f5; }
+    body { 
+      font-family: 'Sarabun', sans-serif; 
+      background-color: #fff5f5; 
+      height: 100vh;
+      overflow: hidden; /* ห้ามเลื่อนแนวตั้ง */
+    }
     
-    .order-card { 
-      background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(255, 150, 150, 0.1); 
-      display: flex; flex-direction: column; overflow: hidden; border: 1px solid #fed7d7;
+    /* 🌟 แถบเลื่อนแนวนอน */
+    .horizontal-scroll {
+      display: flex;
+      flex-direction: row;
+      overflow-x: auto;
+      overflow-y: hidden;
+      gap: 1.5rem;
+      padding: 1rem;
+      height: calc(100vh - 120px);
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
     }
 
-    /* สไตล์ตอนขีดฆ่ารายการ */
+    /* 🌟 การ์ดออเดอร์แบบคงที่ความกว้าง */
+    .order-card { 
+      min-width: 350px;
+      max-width: 350px;
+      background: white; 
+      border-radius: 16px; 
+      box-shadow: 0 10px 25px rgba(255, 150, 150, 0.15); 
+      display: flex; 
+      flex-direction: column; 
+      max-height: 100%;
+      border: 2px solid #fed7d7;
+      scroll-snap-align: start;
+    }
+
     .item-done { 
       text-decoration: line-through !important; 
-      color: #feb2b2 !important; /* ชมพูจาง */
-      opacity: 0.7;
+      color: #feb2b2 !important; 
+      opacity: 0.6;
     }
-    .item-row { cursor: pointer; transition: background 0.2s; }
-    .item-row:hover { background-color: #fffaf0; }
+    
+    /* สไตล์ scrollbar ให้สวยงาม */
+    .horizontal-scroll::-webkit-scrollbar { height: 12px; }
+    .horizontal-scroll::-webkit-scrollbar-track { background: #fff5f5; }
+    .horizontal-scroll::-webkit-scrollbar-thumb { background: #feb2b2; border-radius: 10px; }
 
-    /* กระพริบสีส้ม-แดง สำหรับออเดอร์ใหม่ */
     .animate-new { animation: pulse-warm 2s infinite; }
     @keyframes pulse-warm {
-      0% { box-shadow: 0 0 0 0 rgba(245, 101, 101, 0.5); }
-      70% { box-shadow: 0 0 0 10px rgba(245, 101, 101, 0); }
+      0% { box-shadow: 0 0 0 0 rgba(245, 101, 101, 0.6); }
+      70% { box-shadow: 0 0 0 15px rgba(245, 101, 101, 0); }
       100% { box-shadow: 0 0 0 0 rgba(245, 101, 101, 0); }
     }
   </style>
 </head>
-<body class="p-4">
+<body class="flex flex-col">
   
-  <header class="flex justify-between items-center mb-6 bg-[#9b2c2c] p-4 rounded-xl shadow-lg border-b-4 border-[#ed64a6]">
+  <header class="flex justify-between items-center bg-[#9b2c2c] p-4 shadow-lg border-b-4 border-[#ed64a6] z-10">
     <div class="flex items-center gap-4">
-      <img src="https://i.postimg.cc/7hH1kcTR/20-(2).png" class="w-12 h-12 rounded-full border-2 border-pink-200">
+      <img src="https://i.postimg.cc/7hH1kcTR/20-(2).png" class="w-12 h-12 rounded-full border-2 border-pink-200 shadow-md">
       <div>
         <h1 class="text-2xl font-bold text-white leading-tight">ระบบห้องครัว (KDS)</h1>
-        <div class="flex items-center gap-2">
-           <span id="conn-status" class="w-2 h-2 rounded-full bg-orange-400 animate-pulse"></span>
-           <p class="text-[10px] text-pink-200 font-bold uppercase tracking-widest">Kitchen & Orders Control</p>
-        </div>
+        <p class="text-[10px] text-pink-200 font-bold uppercase tracking-widest">Kitchen Queue Management</p>
       </div>
     </div>
-    <div class="text-white font-bold text-2xl tracking-tighter" id="clock">00:00:00</div>
+    <div class="text-white font-bold text-3xl" id="clock">00:00:00</div>
   </header>
 
-  <div id="kitchen-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-    </div>
+  <div id="kitchen-grid" class="horizontal-scroll">
+    <div class="flex items-center justify-center w-full text-pink-300">กำลังเชื่อมต่อฐานข้อมูล...</div>
+  </div>
 
   <audio id="notif-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
 
   <script>
     const GAS_URL = "https://script.google.com/macros/s/AKfycbze232QP-U4Z9cXDqVDZW9nnl8pmDy-NDafNWKAH6nfn14eTg4euKEjRLs6lPH1bboV_A/exec"; 
     let currentOrders = [];
-    
-    // 🌟 ชุดสีหัวกระดาษ: ส้ม, ชมพูเข้ม, แดงสด, ชมพูหวาน
     const headerColors = ['bg-[#f6ad55]', 'bg-[#ed64a6]', 'bg-[#e53e3e]', 'bg-[#fc8181]'];
 
     function loadOrders() {
@@ -75,14 +98,12 @@
         });
     }
 
-    function toggleItem(el) {
-      el.classList.toggle('item-done');
-    }
+    function toggleItem(el) { el.classList.toggle('item-done'); }
 
     function renderKitchen() {
       const grid = document.getElementById('kitchen-grid');
       if (currentOrders.length === 0) {
-        grid.innerHTML = '<div class="col-span-full text-center py-20 text-pink-300 font-bold text-xl">พักผ่อนได้... ยังไม่มีออเดอร์จ้า 🌸</div>';
+        grid.innerHTML = '<div class="w-full flex items-center justify-center text-pink-300 font-bold text-2xl">พักผ่อนได้... ยังไม่มีออเดอร์จ้า 🌸</div>';
         return;
       }
 
@@ -92,44 +113,43 @@
 
         return `
         <div class="order-card ${isNew ? 'animate-new' : ''}">
-          <div class="${colorClass} p-2 px-3 flex justify-between items-center text-white text-xs font-bold">
-            <span>BILL #${order.rowIndex}</span>
-            <span>🕒 ${order.timestamp}</span>
+          <div class="${colorClass} p-3 flex justify-between items-center text-white font-bold rounded-t-lg">
+            <span class="text-lg">คิวที่ #${order.queueNo || '-'}</span>
+            <span class="text-sm">🕒 ${order.timestamp}</span>
           </div>
 
-          <div class="bg-[#fff5f5] p-3 text-center border-b border-pink-100">
-            <h2 class="text-2xl font-black text-gray-800">โต๊ะ ${order.tableNo}</h2>
-            ${isNew ? '<p class="text-[10px] text-red-500 font-bold uppercase animate-bounce mt-1">Order ใหม่!</p>' : ''}
+          <div class="bg-[#fff5f5] p-4 text-center border-b border-pink-100">
+            <h2 class="text-3xl font-black text-gray-800">โต๊ะ ${order.tableNo}</h2>
           </div>
 
-          <div class="p-4 flex-1 bg-white">
-            <p class="text-[9px] font-bold text-pink-400 mb-2 uppercase border-b border-pink-50 pb-1">รายการอาหาร (แตะเพื่อขีดฆ่า)</p>
-            <ul class="divide-y divide-pink-50">
+          <div class="p-5 flex-1 overflow-y-auto bg-white">
+            <ul class="space-y-4">
               ${order.itemsStr.split(', ').map(item => {
+                // ตรวจสอบโครงสร้าง: ชื่อสินค้า (ตัวเลือก) xจำนวน
                 const match = item.match(/(.+) \((.+)\) (x\d+)/) || item.match(/(.+) (x\d+)/);
                 if (match && match.length > 3) {
                   return `
-                  <li class="py-3 item-row" onclick="toggleItem(this)">
+                  <li class="py-2 border-b border-pink-50 item-row cursor-pointer" onclick="toggleItem(this)">
                     <div class="flex justify-between items-start">
-                      <span class="text-lg font-bold text-gray-700 leading-tight">${match[1]}</span>
-                      <span class="text-lg font-black text-orange-500 ml-2">${match[3]}</span>
+                      <span class="text-xl font-bold text-gray-800 leading-tight">${match[1]}</span>
+                      <span class="text-xl font-black text-orange-500">${match[3]}</span>
                     </div>
-                    <div class="text-[11px] text-pink-500 font-bold mt-1 ml-2 italic">↳ ${match[2]}</div>
+                    <div class="text-sm text-pink-500 font-bold mt-1 ml-2 bg-pink-50 p-1 rounded">↳ ${match[2]}</div>
                   </li>`;
                 }
                 return `
-                  <li class="py-3 item-row flex justify-between items-center text-gray-700" onclick="toggleItem(this)">
-                    <span class="text-lg font-bold">${item}</span>
+                  <li class="py-2 border-b border-pink-50 item-row cursor-pointer flex justify-between items-center" onclick="toggleItem(this)">
+                    <span class="text-xl font-bold text-gray-700">${item}</span>
                   </li>`;
               }).join('')}
             </ul>
           </div>
 
-          <div class="p-3 bg-white border-t border-pink-50">
+          <div class="p-4 bg-white rounded-b-lg">
             ${isNew 
-              ? `<button onclick="updateStatus(${order.rowIndex}, 'Accepted')" class="w-full bg-orange-400 hover:bg-orange-500 text-white py-4 rounded-xl font-bold text-lg shadow-sm transition active:scale-95">👨‍🍳 รับออเดอร์</button>`
-              : `<button onclick="updateStatus(${order.rowIndex}, 'Completed')" class="w-full bg-[#e53e3e] hover:bg-red-700 text-white py-4 rounded-xl font-bold text-lg shadow-md transition active:scale-95 flex items-center justify-center gap-2">
-                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+              ? `<button onclick="updateStatus(${order.rowIndex}, 'Accepted')" class="w-full bg-orange-400 hover:bg-orange-500 text-white py-5 rounded-2xl font-bold text-xl shadow-lg transition active:scale-95">👨‍🍳 รับออเดอร์</button>`
+              : `<button onclick="updateStatus(${order.rowIndex}, 'Completed')" class="w-full bg-[#e53e3e] hover:bg-red-700 text-white py-5 rounded-2xl font-bold text-xl shadow-lg transition active:scale-95 flex items-center justify-center gap-3">
+                  <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                   เสร็จแล้ว (DONE)
                  </button>`
             }
@@ -139,12 +159,7 @@
     }
 
     function updateStatus(rowIndex, status) {
-      Swal.fire({ 
-        title: 'บันทึกสถานะ...', 
-        target: 'body',
-        confirmButtonColor: '#e53e3e',
-        didOpen: () => Swal.showLoading() 
-      });
+      Swal.fire({ title: 'บันทึกสถานะ...', didOpen: () => Swal.showLoading() });
       fetch(GAS_URL, {
         method: "POST",
         body: JSON.stringify({ action: "updateKitchenStatus", rowIndex, status })
@@ -161,7 +176,7 @@
     }, 1000);
 
     loadOrders();
-    setInterval(loadOrders, 10000);
+    setInterval(loadOrders, 8000);
   </script>
 </body>
 </html>
