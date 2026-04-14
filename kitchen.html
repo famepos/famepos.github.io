@@ -68,43 +68,48 @@ function renderKitchen() {
         <span class="text-lg">คิวที่ #${order.queueNo || '-'}</span>
         <span class="text-sm">🕒 ${order.timestamp}</span>
       </div>
+
       <div class="bg-[#fff5f5] p-3 text-center border-b border-pink-100">
         <h2 class="text-2xl font-black text-gray-800">โต๊ะ ${order.tableNo}</h2>
       </div>
+
       <div class="p-4 flex-1 overflow-y-auto bg-white">
         <ul class="space-y-4">
-          ${order.itemsStr.split(' | ').map(item => { // 🌟 แยกรายการด้วยเครื่องหมาย |
-            // ค้นหาจำนวน x1, x2 ที่อยู่ท้ายสุด
-            const qtyMatch = item.match(/\s*(x\d+)$/);
-            const qty = qtyMatch ? qtyMatch[1] : "";
-            const remaining = item.replace(qtyMatch ? qtyMatch[0] : "", "").trim();
+          ${order.itemsStr.split(' | ').map(item => { // 🌟 แยกแต่ละจานด้วยเครื่องหมาย |
             
-            // ค้นหาวงเล็บสุดท้ายที่เก็บตัวเลือก
-            const optMatch = remaining.match(/(.+)\s*\(([^)]+)\)$/);
+            // ใช้ Regex แยก: ชื่ออาหาร, ตัวเลือกในวงเล็บสุดท้าย, และจำนวน x...
+            const match = item.match(/(.+?)\s*(?:\(([^)]+)\))?\s*(x\d+)$/);
             
-            let name = remaining;
-            let opts = "";
-            
-            if (optMatch) {
-              name = optMatch[1]; // ชื่ออาหาร
-              opts = optMatch[2]; // ตัวเลือกเสริม
-            }
+            if (match) {
+              const name = match[1]; // ชื่ออาหารหลัก
+              const opts = match[2]; // ตัวเลือกเสริม (ในวงเล็บ)
+              const qty = match[3];  // จำนวน x1, x2...
 
-            return `
-            <li class="py-2 border-b border-pink-50 cursor-pointer" onclick="toggleItem(this)">
-              <div class="flex justify-between items-start">
-                <span class="text-lg font-bold text-gray-800 leading-tight">${name}</span>
-                <span class="text-lg font-black text-orange-500 ml-2">${qty}</span>
-              </div>
-              ${opts ? `<div class="text-sm text-pink-600 font-bold mt-2 ml-1 bg-pink-50 p-2 rounded-lg flex items-start gap-1"><span>↳</span><span class="leading-relaxed">${opts}</span></div>` : ''}
-            </li>`;
+              return `
+              <li class="py-2 border-b border-pink-50 cursor-pointer" onclick="toggleItem(this)">
+                <div class="flex justify-between items-start">
+                  <span class="text-lg font-bold text-gray-800 leading-tight">${name}</span>
+                  <span class="text-lg font-black text-orange-500 ml-2">${qty}</span>
+                </div>
+                
+                ${opts ? `
+                <div class="text-[13px] text-pink-600 font-bold mt-2 ml-1 bg-pink-50 p-2 rounded-xl flex items-start gap-2 border border-pink-100 shadow-sm">
+                  <span class="text-pink-400">↳</span>
+                  <span class="leading-relaxed">${opts}</span>
+                </div>` : ''}
+              </li>`;
+            }
+            
+            // กรณีรายการทั่วไปที่ไม่มีรูปแบบพิเศษ
+            return `<li class="py-2 border-b border-pink-50 cursor-pointer text-lg font-bold text-gray-700" onclick="toggleItem(this)">${item}</li>`;
           }).join('')}
         </ul>
       </div>
+
       <div class="p-4 bg-white rounded-b-[20px]">
         ${isNew 
           ? `<button onclick="updateStatus(${order.rowIndex}, 'Accepted')" class="w-full bg-orange-400 text-white py-4 rounded-xl font-bold text-xl shadow-lg transition active:scale-95">👨‍🍳 รับออเดอร์</button>`
-          : `<button onclick="updateStatus(${order.rowIndex}, 'Completed')" class="w-full bg-[#e53e3e] text-white py-4 rounded-xl font-bold text-xl shadow-lg transition active:scale-95">DONE</button>`
+          : `<button onclick="updateStatus(${order.rowIndex}, 'Completed')" class="w-full bg-[#e53e3e] text-white py-4 rounded-xl font-bold text-xl shadow-lg transition active:scale-95">✅ DONE (เสิร์ฟ)</button>`
         }
       </div>
     </div>`;
