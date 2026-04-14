@@ -53,26 +53,26 @@
     }, 1000);
 
     // ฟังก์ชันดึงข้อมูลจาก Google Sheets ผ่าน API
-    function loadOrders() {
-      fetch(GAS_URL + "?api=getKitchenOrders")
-        .then(response => response.json())
-        .then(data => {
-          document.getElementById('conn-status').className = "w-3 h-3 rounded-full bg-green-500";
-          
-          // เล่นเสียงถ้ามีออเดอร์ใหม่เพิ่มเข้ามา
-          if (data.length > currentOrders.length && currentOrders.length !== 0) {
-            const sound = document.getElementById('notif-sound');
-            sound.play().catch(e => console.log("รอการคลิกหน้าจอเพื่อเล่นเสียง"));
-          }
-          
-          currentOrders = data;
-          renderKitchen();
-        })
-        .catch(err => {
-          console.error(err);
-          document.getElementById('conn-status').className = "w-3 h-3 rounded-full bg-red-500";
-        });
-    }
+  function loadOrders() {
+  // เติม ?_ ท้ายลิงก์เพื่อป้องกันเบราว์เซอร์จำค่าเก่า (Cache)
+  fetch(GAS_URL + "?api=getKitchenOrders&_=" + new Date().getTime())
+    .then(response => {
+      if (!response.ok) throw new Error('Network response was not ok');
+      return response.json();
+    })
+    .then(data => {
+      document.getElementById('conn-status').className = "w-3 h-3 rounded-full bg-green-500";
+      if (data.length > currentOrders.length && currentOrders.length !== 0) {
+        document.getElementById('notif-sound').play().catch(e => {});
+      }
+      currentOrders = data;
+      renderKitchen();
+    })
+    .catch(err => {
+      console.error("Fetch error:", err);
+      document.getElementById('conn-status').className = "w-3 h-3 rounded-full bg-red-500";
+    });
+}
 
     // วาดหน้าจอ
     function renderKitchen() {
