@@ -75,39 +75,39 @@ function renderKitchen() {
 
       <div class="p-4 flex-1 overflow-y-auto bg-white">
         <ul class="space-y-4">
-          ${order.itemsStr.split(' | ').map(item => { // 🌟 แยกแต่ละรายการออกจากกันด้วยเครื่องหมาย |
-            
-            // Regex ขั้นสูง: แยก (ชื่อสินค้า) (ตัวเลือก) และ (จำนวน)
-            // ค้นหาจำนวน x... ที่อยู่ท้ายสุดก่อน
-            const qtyMatch = item.match(/\s*(x\d+)$/);
-            const qty = qtyMatch ? qtyMatch[1] : "";
-            const remaining = item.replace(qtyMatch ? qtyMatch[0] : "", "").trim();
-            
-            // ค้นหาวงเล็บสุดท้ายที่เก็บตัวเลือกเสริม
-            const optMatch = remaining.match(/(.+)\s*\(([^)]+)\)$/);
-            
-            let name = remaining;
-            let opts = "";
-            
-            if (optMatch) {
-              name = optMatch[1]; // ชื่ออาหารหลัก
-              opts = optMatch[2]; // รายการตัวเลือกเสริม
-            }
-
-            return `
-            <li class="py-2 border-b border-pink-50 cursor-pointer" onclick="toggleItem(this)">
-              <div class="flex justify-between items-start">
-                <span class="text-lg font-bold text-gray-700 leading-tight">${name}</span>
-                <span class="text-lg font-black text-orange-500 ml-2">${qty}</span>
-              </div>
+          ${(function() {
+            try {
+              // 🌟 แปลงข้อมูล JSON ดิบมาใช้งานโดยตรง (แม่นยำ 100%)
+              const cartItems = JSON.parse(order.rawCart);
               
-              ${opts ? `
-              <div class="text-[13px] text-pink-600 font-bold mt-2 ml-1 bg-pink-50 p-2 rounded-xl flex items-start gap-2 border border-pink-100 shadow-sm">
-                <span class="text-pink-400">↳</span>
-                <span class="leading-relaxed">${opts}</span>
-              </div>` : ''}
-            </li>`;
-          }).join('')}
+              return cartItems.map(item => {
+                const name = item.name;
+                const qty = "x" + item.qty;
+                
+                // ดึงตัวเลือกออกมาเรียงกัน
+                const optionsObj = item.opts || item.options || {};
+                const optionsArray = Object.values(optionsObj);
+                const opts = optionsArray.length > 0 ? optionsArray.join(', ') : "";
+
+                return `
+                <li class="py-2 border-b border-pink-50 cursor-pointer" onclick="toggleItem(this)">
+                  <div class="flex justify-between items-start">
+                    <span class="text-lg font-bold text-gray-800 leading-tight">${name}</span>
+                    <span class="text-lg font-black text-orange-500 ml-2">${qty}</span>
+                  </div>
+                  
+                  ${opts ? `
+                  <div class="text-[13px] text-pink-600 font-bold mt-2 ml-1 bg-pink-50 p-2 rounded-xl flex items-start gap-2 border border-pink-100 shadow-sm">
+                    <span class="text-pink-400">↳</span>
+                    <span class="leading-relaxed">${opts}</span>
+                  </div>` : ''}
+                </li>`;
+              }).join('');
+            } catch(e) {
+              // กรณีดึง JSON ไม่ได้ (สำหรับออเดอร์เก่าๆ) ให้แสดงผลสำรอง
+              return `<li class="text-red-500 text-sm">รูปแบบข้อมูลเก่า: ${order.itemsStr}</li>`;
+            }
+          })()}
         </ul>
       </div>
 
