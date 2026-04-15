@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>สั่งอาหาร - FamePOS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body class="bg-rose-50">
+    <div id="app">
+        </div>
+
+    <script>
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbze232QP-U4Z9cXDqVDZW9nnl8pmDy-NDafNWKAH6nfn14eTg4euKEjRLs6lPH1bboV_A/exec";
+        const urlParams = new URLSearchParams(window.location.search);
+        const tableNo = urlParams.get('table');
+
+        // ฟังก์ชันดึงเมนูจาก GAS
+        function loadMenu() {
+            fetch(`${GAS_URL}?api=getMenu`)
+                .then(res => res.json())
+                .then(data => {
+                    renderMenu(data.products);
+                });
+        }
+
+        // ฟังก์ชันส่งออเดอร์กลับไป GAS
+        function sendOrder(cart, total) {
+            const orderData = {
+                tableNo: tableNo,
+                itemsStr: cart.map(i => `${i.name} x${i.qty}`).join(', '),
+                total: total,
+                cart: cart
+            };
+
+            fetch(GAS_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'submitOrder', data: orderData })
+            })
+            .then(res => res.json())
+            .then(res => {
+                if(res.success) Swal.fire('สำเร็จ', res.message, 'success');
+            });
+        }
+        
+        window.onload = loadMenu;
+    </script>
+</body>
+</html>
