@@ -17,13 +17,13 @@
         
         <div id="reader" class="w-full bg-black rounded-3xl overflow-hidden border-4 border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.5)] min-h-[300px] flex items-center justify-center relative">
             <div id="loading-text" class="text-white text-center absolute z-10">
-                กำลังเปิดกล้อง...<br>
-                <span class="text-xs text-gray-400">(เบราว์เซอร์อาจถามสิทธิ์การเข้าถึงกล้อง)</span>
+                กำลังตรวจสอบกล้อง...<br>
+                <span class="text-xs text-gray-400">(หากมี Popup ให้กด Allow / อนุญาต)</span>
             </div>
         </div>
         
         <p class="text-gray-400 text-[11px] mt-6 text-center bg-gray-800 px-4 py-2 rounded-xl">
-            พยายามให้บาร์โค้ดอยู่ตรงกลางกรอบสีเหลี่ยม<br>(รองรับ EAN-13, Code-128 และ QR Code)
+            พยายามให้บาร์โค้ดอยู่ตรงกลางกรอบสี่เหลี่ยม<br>(รองรับ EAN-13, Code-128 และ QR Code)
         </p>
 
         <button onclick="window.close()" class="mt-8 bg-gray-700 hover:bg-gray-600 text-white px-8 py-3 rounded-2xl font-bold transition active:scale-95">
@@ -32,57 +32,65 @@
     </div>
 
     <script>
-        // 1. สร้างเครื่องสแกน (แบบควบคุมเอง ไม่ใช้ UI อัตโนมัติที่ซ่อนปุ่ม)
         const html5QrCode = new Html5Qrcode("reader");
 
-        // 2. ฟังก์ชันเมื่อสแกนสำเร็จ
         function onScanSuccess(decodedText, decodedResult) {
-            // หยุดสแกนทันทีเพื่อกันสแกนซ้ำเบิ้ล
             html5QrCode.stop().then(() => {
-                // เล่นเสียงติ๊ง
                 const beep = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
                 beep.play().catch(()=>console.log('Audio play blocked'));
 
-                // ส่งรหัสกลับไปให้หน้า POS หลัก
                 if (window.opener) {
                     window.opener.postMessage({ type: 'BARCODE_SCANNED', code: decodedText }, '*');
                 }
                 
-                // ปิดหน้าต่างทันที
                 setTimeout(() => { window.close(); }, 300);
-            }).catch(err => {
-                console.log("Error stopping scanner", err);
-            });
+            }).catch(err => console.log(err));
         }
 
-        // 3. สั่งเปิดกล้องหลังอัตโนมัติทันที
-        html5QrCode.start(
-          { facingMode: "environment" }, // บังคับใช้กล้องหลังเสมอ
-          {
+        function onScanFailure(error) { 
+            // ปล่อยผ่าน ไม่ต้องแจ้งเตือนทุกครั้งที่หาสแกนไม่เจอ
+        }
+
+        const config = {
             fps: 15,
-            qrbox: { width: 250, height: 120 }, // บีบกรอบให้เป็นแนวนอน จับบาร์โค้ดง่ายขึ้น
+            qrbox: { width: 250, height: 120 }, // กรอบแนวนอน สแกนง่ายขึ้น
             aspectRatio: 1.0,
             formatsToSupport: [ 
                 Html5QrcodeSupportedFormats.EAN_13, 
                 Html5QrcodeSupportedFormats.CODE_128, 
                 Html5QrcodeSupportedFormats.QR_CODE 
             ]
-          },
-          onScanSuccess,
-          (errorMessage) => {
-              // ปล่อยผ่าน Error กรณีที่ยังหาบาร์โค้ดไม่เจอในวินาทีนั้นๆ
-          }
-        ).then(() => {
-            // ซ่อนคำว่า "กำลังเปิดกล้อง..." เมื่อกล้องเปิดติดแล้ว
-            const loadingText = document.getElementById('loading-text');
-            if(loadingText) loadingText.style.display = 'none';
-        }).catch((err) => {
-            // กรณีผู้ใช้ไม่อนุญาต หรือไม่มีกล้อง
+        };
+
+        // 🌟 ระบบค้นหากล้องอัจฉริยะ (รองรับทั้งคอมและมือถือ)
+        Html5Qrcode.getCameras().then(devices => {
+            if (devices && devices.length > 0) {
+                // 1. ลองพยายามเปิดกล้องหลังก่อน (สำหรับคนเปิดผ่านมือถือ)
+                html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, onScanFailure)
+                .then(() => { 
+                    document.getElementById('loading-text').style.display = 'none'; 
+                })
+                .catch((err) => {
+                    // 2. ถ้าเปิดกล้องหลังไม่สำเร็จ (แปลว่าเปิดบนคอม) ให้เอากล้องตัวแรกสุดที่หาเจอมาเปิดแทน (Webcam)
+                    html5QrCode.start(devices[0].id, config, onScanSuccess, onScanFailure)
+                    .then(() => { 
+                        document.getElementById('loading-text').style.display = 'none'; 
+                    })
+                    .catch(finalErr => showError());
+                });
+            } else {
+                showError();
+            }
+        }).catch(err => {
+            showError();
+        });
+
+        function showError() {
             document.getElementById('loading-text').innerHTML = `
                 <span class="text-red-500 font-bold">❌ ไม่สามารถเปิดกล้องได้</span><br>
-                <span class="text-xs text-gray-400 mt-2 block">กรุณากดไอคอนแม่กุญแจ 🔒 บนช่อง URL<br>แล้วกดอนุญาต (Allow) ให้ใช้งาน Camera ครับ</span>
+                <span class="text-xs text-gray-400 mt-2 block">1. ตรวจสอบว่ามีกล้องเชื่อมต่ออยู่หรือไม่<br>2. กดไอคอนแม่กุญแจ 🔒 บนช่อง URL แล้วกด "อนุญาต"</span>
             `;
-        });
+        }
     </script>
 </body>
 </html>
