@@ -39,7 +39,7 @@
   <audio id="notif-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
 
   <script>
-    // 🌟 อย่าลืมเช็คให้ชัวร์ว่าลิงก์นี้ตรงกับ Deployment ID ล่าสุดของคุณ!
+    // 🌟 เอา URL ล่าสุดของคุณที่ขึ้นต้นด้วย https://script.google.com/macros/s/..../exec มาใส่ในช่องนี้ครับ
     const GAS_URL = "https://script.google.com/macros/s/AKfycbze232QP-U4Z9cXDqVDZW9nnl8pmDy-NDafNWKAH6nfn14eTg4euKEjRLs6lPH1bboV_A/exec"; 
     
     let currentOrders = [];
@@ -53,6 +53,11 @@
           if (data.length > currentOrders.length && currentOrders.length !== 0) document.getElementById('notif-sound').play().catch(e => {});
           currentOrders = data;
           renderKitchen();
+        })
+        .catch(err => {
+            console.error("Fetch Error:", err);
+            // เพิ่มแจ้งเตือนถ้าระบบหาลิงก์ไม่เจอ
+            document.getElementById('kitchen-grid').innerHTML = `<div class="w-full flex flex-col items-center justify-center text-red-500 font-bold text-xl mt-10">❌ ไม่สามารถเชื่อมต่อฐานข้อมูลได้<br><span class="text-sm text-gray-500 mt-2">โปรดตรวจสอบ Web App URL หรือสิทธิ์การเข้าถึง (Anyone)</span></div>`;
         });
     }
 
@@ -69,7 +74,7 @@
     function renderKitchen() {
       const grid = document.getElementById('kitchen-grid');
       
-      // 🌟 ตรงนี้คือจุดที่ใช้ Backtick (`) ครอบข้อความแบบหลายบรรทัด
+      // 🌟 แก้ไขจุดที่ Error (เอาคำสั่ง return ออกจากวงเล็บ)
       if (currentOrders.length === 0) {
         grid.innerHTML = `
           <div class="w-full h-full flex flex-col items-center justify-center text-pink-300 text-center mt-10">
@@ -77,7 +82,7 @@
             <div class="text-xl font-medium opacity-80">...เตรียมตัวรับออเดอร์ต่อไป...</div>
           </div>
         `;
-        return;
+        return; // คำสั่งนี้ต้องอยู่นอกสุดครับ
       }
 
       grid.innerHTML = currentOrders.map((order, index) => {
@@ -146,8 +151,24 @@
 
     function updateStatus(rowIndex, status) {
       Swal.fire({ title: 'บันทึกสถานะ...', didOpen: () => Swal.showLoading() });
-      fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "updateKitchenStatus", rowIndex, status }) })
-      .then(res => res.json()).then(data => { Swal.close(); if (data.success) loadOrders(); });
+      
+      // ส่งแบบ fetch ปกติ
+      fetch(GAS_URL, { 
+        method: "POST", 
+        body: JSON.stringify({ action: "updateKitchenStatus", rowIndex: rowIndex, status: status }) 
+      })
+      .then(res => res.json())
+      .then(data => { 
+        Swal.close(); 
+        if (data.success) {
+            loadOrders(); 
+        } else {
+            Swal.fire("ข้อผิดพลาด", data.error || "เกิดข้อผิดพลาดบางอย่าง", "error");
+        }
+      })
+      .catch(err => {
+         Swal.fire("เชื่อมต่อล้มเหลว", "โปรดตรวจสอบ Web App ของคุณ", "error");
+      });
     }
 
     setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString('th-TH'); }, 1000);
