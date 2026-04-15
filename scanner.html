@@ -15,7 +15,12 @@
             <span class="animate-pulse">🔴</span> กำลังสแกนบาร์โค้ด...
         </h2>
         
-        <div id="reader" class="w-full bg-black rounded-3xl overflow-hidden border-4 border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.5)]"></div>
+        <div id="reader" class="w-full bg-black rounded-3xl overflow-hidden border-4 border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.5)] min-h-[300px] flex items-center justify-center relative">
+            <div id="loading-text" class="text-white text-center absolute z-10">
+                กำลังเปิดกล้อง...<br>
+                <span class="text-xs text-gray-400">(เบราว์เซอร์อาจถามสิทธิ์การเข้าถึงกล้อง)</span>
+            </div>
+        </div>
         
         <p class="text-gray-400 text-[11px] mt-6 text-center bg-gray-800 px-4 py-2 rounded-xl">
             พยายามให้บาร์โค้ดอยู่ตรงกลางกรอบสีเหลี่ยม<br>(รองรับ EAN-13, Code-128 และ QR Code)
@@ -27,53 +32,57 @@
     </div>
 
     <script>
-        // 1. ฟังก์ชันเมื่อสแกนติด
+        // 1. สร้างเครื่องสแกน (แบบควบคุมเอง ไม่ใช้ UI อัตโนมัติที่ซ่อนปุ่ม)
+        const html5QrCode = new Html5Qrcode("reader");
+
+        // 2. ฟังก์ชันเมื่อสแกนสำเร็จ
         function onScanSuccess(decodedText, decodedResult) {
-            // เล่นเสียงติ๊ง
-            const beep = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-            beep.play().catch(()=>console.log('Audio play blocked'));
+            // หยุดสแกนทันทีเพื่อกันสแกนซ้ำเบิ้ล
+            html5QrCode.stop().then(() => {
+                // เล่นเสียงติ๊ง
+                const beep = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+                beep.play().catch(()=>console.log('Audio play blocked'));
 
-            // ส่งรหัสกลับไปให้หน้า POS หลัก
-            if (window.opener) {
-                window.opener.postMessage({ type: 'BARCODE_SCANNED', code: decodedText }, '*');
-            }
-            
-            // ปิดกล้องและปิดหน้าต่างทันที
-            html5QrcodeScanner.clear();
-            setTimeout(() => { window.close(); }, 300);
+                // ส่งรหัสกลับไปให้หน้า POS หลัก
+                if (window.opener) {
+                    window.opener.postMessage({ type: 'BARCODE_SCANNED', code: decodedText }, '*');
+                }
+                
+                // ปิดหน้าต่างทันที
+                setTimeout(() => { window.close(); }, 300);
+            }).catch(err => {
+                console.log("Error stopping scanner", err);
+            });
         }
 
-        // 2. ฟังก์ชันเมื่อสแกนไม่เจอ (ปล่อยว่างไว้ ไม่ต้องให้มันแจ้งเตือนกวนใจ)
-        function onScanFailure(error) {
-            // ไม่ต้องทำอะไร
-        }
-
-        // 3. ตั้งค่าตัวสแกนให้เหมาะกับ EAN-13
-        let html5QrcodeScanner = new Html5QrcodeScanner(
-            "reader",
-            { 
-                fps: 15, 
-                qrbox: { width: 250, height: 120 }, // 🌟 บีบกรอบสแกนให้เป็นแนวนอน จะช่วยให้อ่านบาร์โค้ดแท่งได้ดีขึ้น 300%
-                aspectRatio: 1.0,
-                formatsToSupport: [ 
-                    Html5QrcodeSupportedFormats.EAN_13, // สำหรับบาร์โค้ดสินค้าทั่วไป (เช่น 885)
-                    Html5QrcodeSupportedFormats.CODE_128, // สำหรับบาร์โค้ดพิมพ์เอง
-                    Html5QrcodeSupportedFormats.QR_CODE 
-                ]
-            },
-            false // ไม่โชว์ log กวนใจ
-        );
-        
-        // 4. สั่งเริ่มเปิดกล้องทันที
-        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+        // 3. สั่งเปิดกล้องหลังอัตโนมัติทันที
+        html5QrCode.start(
+          { facingMode: "environment" }, // บังคับใช้กล้องหลังเสมอ
+          {
+            fps: 15,
+            qrbox: { width: 250, height: 120 }, // บีบกรอบให้เป็นแนวนอน จับบาร์โค้ดง่ายขึ้น
+            aspectRatio: 1.0,
+            formatsToSupport: [ 
+                Html5QrcodeSupportedFormats.EAN_13, 
+                Html5QrcodeSupportedFormats.CODE_128, 
+                Html5QrcodeSupportedFormats.QR_CODE 
+            ]
+          },
+          onScanSuccess,
+          (errorMessage) => {
+              // ปล่อยผ่าน Error กรณีที่ยังหาบาร์โค้ดไม่เจอในวินาทีนั้นๆ
+          }
+        ).then(() => {
+            // ซ่อนคำว่า "กำลังเปิดกล้อง..." เมื่อกล้องเปิดติดแล้ว
+            const loadingText = document.getElementById('loading-text');
+            if(loadingText) loadingText.style.display = 'none';
+        }).catch((err) => {
+            // กรณีผู้ใช้ไม่อนุญาต หรือไม่มีกล้อง
+            document.getElementById('loading-text').innerHTML = `
+                <span class="text-red-500 font-bold">❌ ไม่สามารถเปิดกล้องได้</span><br>
+                <span class="text-xs text-gray-400 mt-2 block">กรุณากดไอคอนแม่กุญแจ 🔒 บนช่อง URL<br>แล้วกดอนุญาต (Allow) ให้ใช้งาน Camera ครับ</span>
+            `;
+        });
     </script>
-
-    <style>
-        #reader__dashboard_section_csr span { color: white !important; }
-        #reader__dashboard_section_swaplink { color: #ef4444 !important; text-decoration: none !important; font-weight: bold; }
-        #reader__camera_permission_button { background: #ef4444 !important; color: white !important; border: none !important; border-radius: 10px; padding: 10px 20px; font-weight: bold; }
-        #reader__dashboard_section_csr select { padding: 5px; border-radius: 5px; }
-        #reader a { display: none; }
-    </style>
 </body>
 </html>
