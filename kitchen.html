@@ -60,6 +60,21 @@
 
     function toggleItem(el) { el.classList.toggle('item-done'); }
 
+// 🌟 เพิ่มตัวแปร global เพื่อจำว่าจานไหนทำเสร็จแล้ว
+let doneItemsMemory = {}; 
+
+function toggleItem(el, queueNo, itemIndex) { 
+  el.classList.toggle('item-done');
+  
+  // 🌟 บันทึกสถานะลง memory
+  const key = `${queueNo}_${itemIndex}`;
+  if (el.classList.contains('item-done')) {
+    doneItemsMemory[key] = true;
+  } else {
+    delete doneItemsMemory[key];
+  }
+}
+
 function renderKitchen() {
   const grid = document.getElementById('kitchen-grid');
   if (currentOrders.length === 0) {
@@ -86,20 +101,21 @@ function renderKitchen() {
         <ul class="space-y-4">
           ${(function() {
             try {
-              // 🌟 แปลงข้อมูล JSON ดิบมาใช้งานโดยตรง (แม่นยำ 100%)
               const cartItems = JSON.parse(order.rawCart);
               
-              return cartItems.map(item => {
+              return cartItems.map((item, itemIdx) => {
                 const name = item.name;
                 const qty = "x" + item.qty;
-                
-                // ดึงตัวเลือกออกมาเรียงกัน
                 const optionsObj = item.opts || item.options || {};
                 const optionsArray = Object.values(optionsObj);
                 const opts = optionsArray.length > 0 ? optionsArray.join(', ') : "";
+                
+                // 🌟 เช็คว่าเมนูนี้เคยถูกขีดทิ้งไว้หรือเปล่า
+                const memoryKey = `${order.queueNo}_${itemIdx}`;
+                const isDoneClass = doneItemsMemory[memoryKey] ? 'item-done' : '';
 
                 return `
-                <li class="py-2 border-b border-pink-50 cursor-pointer" onclick="toggleItem(this)">
+                <li class="py-2 border-b border-pink-50 cursor-pointer ${isDoneClass}" onclick="toggleItem(this, '${order.queueNo}', ${itemIdx})">
                   <div class="flex justify-between items-start">
                     <span class="text-lg font-bold text-gray-800 leading-tight">${name}</span>
                     <span class="text-lg font-black text-orange-500 ml-2">${qty}</span>
@@ -113,7 +129,6 @@ function renderKitchen() {
                 </li>`;
               }).join('');
             } catch(e) {
-              // กรณีดึง JSON ไม่ได้ (สำหรับออเดอร์เก่าๆ) ให้แสดงผลสำรอง
               return `<li class="text-red-500 text-sm">รูปแบบข้อมูลเก่า: ${order.itemsStr}</li>`;
             }
           })()}
