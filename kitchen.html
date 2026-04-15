@@ -44,9 +44,12 @@
   <audio id="notif-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
 
   <script>
+    // 🌟 อย่าลืมเช็คให้ชัวร์ว่าลิงก์นี้ตรงกับ Deployment ID ล่าสุดของคุณ!
     const GAS_URL = "https://script.google.com/macros/s/AKfycbze232QP-U4Z9cXDqVDZW9nnl8pmDy-NDafNWKAH6nfn14eTg4euKEjRLs6lPH1bboV_A/exec"; 
+    
     let currentOrders = [];
     const headerColors = ['bg-[#f6ad55]', 'bg-[#ed64a6]', 'bg-[#e53e3e]', 'bg-[#fc8181]'];
+    let doneItemsMemory = {}; 
 
     function loadOrders() {
       fetch(GAS_URL + "?api=getKitchenOrders&_=" + new Date().getTime())
@@ -58,95 +61,91 @@
         });
     }
 
-    function toggleItem(el) { el.classList.toggle('item-done'); }
+    function toggleItem(el, queueNo, itemIndex) { 
+      el.classList.toggle('item-done');
+      const key = `${queueNo}_${itemIndex}`;
+      if (el.classList.contains('item-done')) {
+        doneItemsMemory[key] = true;
+      } else {
+        delete doneItemsMemory[key];
+      }
+    }
 
-// 🌟 เพิ่มตัวแปร global เพื่อจำว่าจานไหนทำเสร็จแล้ว
-let doneItemsMemory = {}; 
+  function renderKitchen() {
+      const grid = document.getElementById('kitchen-grid');
+      if (currentOrders.length === 0) {
+        grid.innerHTML = `
+          <div class="w-full h-full flex flex-col items-center justify-center text-pink-300 text-center mt-10">
+            <div class="font-bold text-3xl mb-2">ครัวว่างแล้วจ้า🌸</div>
+            <div class="text-xl font-medium opacity-80">...เตรียมตัวรับออเดอร์ต่อไป...</div>
+          </div>
+        `;
+        return;
+      }
 
-function toggleItem(el, queueNo, itemIndex) { 
-  el.classList.toggle('item-done');
-  
-  // 🌟 บันทึกสถานะลง memory
-  const key = `${queueNo}_${itemIndex}`;
-  if (el.classList.contains('item-done')) {
-    doneItemsMemory[key] = true;
-  } else {
-    delete doneItemsMemory[key];
-  }
-}
+      grid.innerHTML = currentOrders.map((order, index) => {
+        const colorClass = headerColors[index % headerColors.length];
+        const isNew = order.status === 'New';
 
-function renderKitchen() {
-  const grid = document.getElementById('kitchen-grid');
-  if (currentOrders.length === 0) {
-    grid.innerHTML = '<div class="w-full flex items-center justify-center text-pink-300 font-bold text-2xl">ครัวว่างแล้วจ้า🌸</div>';
-    return;
-  }
+        let itemsHtml = '';
+        try {
+          const cartItems = JSON.parse(order.rawCart);
+          itemsHtml = cartItems.map((item, itemIdx) => {
+            const name = item.name;
+            const qty = "x" + item.qty;
+            const optionsObj = item.opts || item.options || {};
+            const optionsArray = Object.values(optionsObj);
+            const opts = optionsArray.length > 0 ? optionsArray.join(', ') : "";
+            
+            const memoryKey = `${order.queueNo}_${itemIdx}`;
+            const isDoneClass = doneItemsMemory[memoryKey] ? 'item-done' : '';
 
-  grid.innerHTML = currentOrders.map((order, index) => {
-    const colorClass = headerColors[index % headerColors.length];
-    const isNew = order.status === 'New';
-
-    return `
-    <div class="order-card ${isNew ? 'animate-new' : ''}">
-      <div class="${colorClass} p-3 flex justify-between items-center text-white font-bold rounded-t-[18px]">
-        <span class="text-lg">คิวที่ #${order.queueNo || '-'}</span>
-        <span class="text-sm">🕒 ${order.timestamp}</span>
-      </div>
-
-      <div class="bg-[#fff5f5] p-3 text-center border-b border-pink-100">
-        <h2 class="text-2xl font-black text-gray-800">โต๊ะ ${order.tableNo}</h2>
-      </div>
-
-      <div class="p-4 flex-1 overflow-y-auto bg-white">
-        <ul class="space-y-4">
-          ${(function() {
-            try {
-              const cartItems = JSON.parse(order.rawCart);
-              
-              return cartItems.map((item, itemIdx) => {
-                const name = item.name;
-                const qty = "x" + item.qty;
-                const optionsObj = item.opts || item.options || {};
-                const optionsArray = Object.values(optionsObj);
-                const opts = optionsArray.length > 0 ? optionsArray.join(', ') : "";
-                
-                // 🌟 เช็คว่าเมนูนี้เคยถูกขีดทิ้งไว้หรือเปล่า
-                const memoryKey = `${order.queueNo}_${itemIdx}`;
-                const isDoneClass = doneItemsMemory[memoryKey] ? 'item-done' : '';
-
-                return `
-                <li class="py-2 border-b border-pink-50 cursor-pointer ${isDoneClass}" onclick="toggleItem(this, '${order.queueNo}', ${itemIdx})">
-                  <div class="flex justify-between items-start">
-                    <span class="text-lg font-bold text-gray-800 leading-tight">${name}</span>
-                    <span class="text-lg font-black text-orange-500 ml-2">${qty}</span>
-                  </div>
-                  
-                  ${opts ? `
-                  <div class="text-[13px] text-pink-600 font-bold mt-2 ml-1 bg-pink-50 p-2 rounded-xl flex items-start gap-2 border border-pink-100 shadow-sm">
-                    <span class="text-pink-400">↳</span>
-                    <span class="leading-relaxed">${opts}</span>
-                  </div>` : ''}
-                </li>`;
-              }).join('');
-            } catch(e) {
-              return `<li class="text-red-500 text-sm">รูปแบบข้อมูลเก่า: ${order.itemsStr}</li>`;
-            }
-          })()}
-        </ul>
-      </div>
-
-      <div class="p-4 bg-white rounded-b-[20px]">
-        ${isNew 
-          ? `<button onclick="updateStatus(${order.rowIndex}, 'Accepted')" class="w-full bg-orange-400 text-white py-4 rounded-xl font-bold text-xl shadow-lg transition active:scale-95">👨‍🍳 รับออเดอร์</button>`
-          : `<button onclick="updateStatus(${order.rowIndex}, 'Completed')" class="w-full bg-[#e53e3e] text-white py-4 rounded-xl font-bold text-xl shadow-lg transition active:scale-95 flex items-center justify-center gap-2">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-              DONE
-             </button>`
+            return `
+            <li class="py-2 border-b border-pink-50 cursor-pointer ${isDoneClass}" onclick="toggleItem(this, '${order.queueNo}', ${itemIdx})">
+              <div class="flex justify-between items-start">
+                <span class="text-lg font-bold text-gray-800 leading-tight">${name}</span>
+                <span class="text-lg font-black text-orange-500 ml-2">${qty}</span>
+              </div>
+              ${opts ? `
+              <div class="text-[13px] text-pink-600 font-bold mt-2 ml-1 bg-pink-50 p-2 rounded-xl flex items-start gap-2 border border-pink-100 shadow-sm">
+                <span class="text-pink-400">↳</span>
+                <span class="leading-relaxed">${opts}</span>
+              </div>` : ''}
+            </li>`;
+          }).join('');
+        } catch(e) {
+          itemsHtml = `<li class="text-red-500 text-sm">รูปแบบข้อมูลเก่า: ${order.itemsStr}</li>`;
         }
-      </div>
-    </div>`;
-  }).join('');
-}
+
+        return `
+        <div class="order-card ${isNew ? 'animate-new' : ''}">
+          <div class="${colorClass} p-3 flex justify-between items-center text-white font-bold rounded-t-[18px]">
+            <span class="text-lg">คิวที่ #${order.queueNo || '-'}</span>
+            <span class="text-sm">🕒 ${order.timestamp}</span>
+          </div>
+
+          <div class="bg-[#fff5f5] p-3 text-center border-b border-pink-100">
+            <h2 class="text-2xl font-black text-gray-800">โต๊ะ ${order.tableNo}</h2>
+          </div>
+
+          <div class="p-4 flex-1 overflow-y-auto bg-white">
+            <ul class="space-y-4">
+              ${itemsHtml}
+            </ul>
+          </div>
+
+          <div class="p-4 bg-white rounded-b-[20px]">
+            ${isNew 
+              ? `<button onclick="updateStatus(${order.rowIndex}, 'Accepted')" class="w-full bg-orange-400 text-white py-4 rounded-xl font-bold text-xl shadow-lg transition active:scale-95">👨‍🍳 รับออเดอร์</button>`
+              : `<button onclick="updateStatus(${order.rowIndex}, 'Completed')" class="w-full bg-[#e53e3e] text-white py-4 rounded-xl font-bold text-xl shadow-lg transition active:scale-95 flex items-center justify-center gap-2">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                  DONE
+                 </button>`
+            }
+          </div>
+        </div>`;
+      }).join('');
+    }
 
     function updateStatus(rowIndex, status) {
       Swal.fire({ title: 'บันทึกสถานะ...', didOpen: () => Swal.showLoading() });
