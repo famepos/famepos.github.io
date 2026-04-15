@@ -31,21 +31,23 @@
     let currentCameraIndex = 0;
 
     // 🔥 เปิดโหมดเทอร์โบ และตั้งค่าการสแกน
-    const config = { 
-      fps: 20, 
-      qrbox: { width: 280, height: 120 },
-      experimentalFeatures: {
-        useBarCodeDetectorIfSupported: true // 🌟 ฟีเจอร์ลับ! ดึง Hardware มือถือมาช่วยอ่านขวดโค้งๆ
-      },
-      formatsToSupport: [ 
-        Html5QrcodeSupportedFormats.EAN_13, // EAN-13 ของขวด Oriental Princess
-        Html5QrcodeSupportedFormats.EAN_8,
-        Html5QrcodeSupportedFormats.CODE_128, 
-        Html5QrcodeSupportedFormats.CODE_39, 
-        Html5QrcodeSupportedFormats.UPC_A, 
-        Html5QrcodeSupportedFormats.QR_CODE 
-      ]
-    };
+const config = {
+            fps: 10, // 🌟 ลดเฟรมเรตลงมาเพื่อให้กล้องมือถือมีเวลาโฟกัสภาพให้ชัด
+            qrbox: { width: 300, height: 150 }, // 🌟 ขยายกรอบให้กว้างขึ้นอีกนิด เผื่อสแกนติดตัวเลขขอบๆ
+            experimentalFeatures: {
+                useBarCodeDetectorIfSupported: true 
+            },
+            formatsToSupport: [ 
+                Html5QrcodeSupportedFormats.EAN_13,
+                Html5QrcodeSupportedFormats.EAN_8,
+                Html5QrcodeSupportedFormats.CODE_128,
+                Html5QrcodeSupportedFormats.CODE_39,
+                Html5QrcodeSupportedFormats.UPC_A,
+                Html5QrcodeSupportedFormats.UPC_E,
+                Html5QrcodeSupportedFormats.ITF,
+                Html5QrcodeSupportedFormats.QR_CODE 
+            ]
+        };
 
     html5QrCode = new Html5Qrcode("reader");
 
