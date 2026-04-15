@@ -1,50 +1,295 @@
 <!DOCTYPE html>
-<html lang="th">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>สั่งอาหาร - FamePOS</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>สั่งอาหาร - FamePOS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap');
+    body { font-family: 'Sarabun', sans-serif; background-color: #fce4e4; } 
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .opt-card { background-color: white; border: 2px solid #e5e7eb; border-radius: 12px; transition: 0.2s; color: #4b5563; }
+    .peer:checked + .opt-card { background-color: #fee2e2; border-color: #ef4444; color: #000000; font-weight: bold; }
+    .animate-fadeIn { animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
 </head>
-<body class="bg-rose-50">
-    <div id="app">
-        </div>
+<body class="flex flex-col h-screen overflow-hidden">
 
-    <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbze232QP-U4Z9cXDqVDZW9nnl8pmDy-NDafNWKAH6nfn14eTg4euKEjRLs6lPH1bboV_A/exec";
-        const urlParams = new URLSearchParams(window.location.search);
-        const tableNo = urlParams.get('table');
+  <header class="bg-white p-4 shadow-sm flex justify-between items-center z-20">
+    <div class="flex items-center gap-3">
+      <div>
+        <h1 class="text-xl font-bold text-red-600">FamePOS</h1>
+        <p class="text-xs text-gray-500">กรุณาเลือกเมนูที่ต้องการ</p>
+      </div>
+    </div>
+    <div class="flex gap-2">
+      <button onclick="viewHistory()" class="bg-gray-100 p-2.5 rounded-xl border border-gray-200 text-lg shadow-sm active:scale-90 transition-all">🕒</button>
+      
+      <div class="bg-red-50 px-4 py-2 rounded-xl border border-red-100 text-center min-w-[60px]">
+        <p class="text-[10px] text-red-400 font-bold uppercase">โต๊ะ</p>
+        <h2 class="text-xl font-bold text-red-600 leading-none" id="disp-table-id">...</h2>
+      </div>
+    </div>
+  </header>
 
-        // ฟังก์ชันดึงเมนูจาก GAS
-        function loadMenu() {
-            fetch(`${GAS_URL}?api=getMenu`)
-                .then(res => res.json())
-                .then(data => {
-                    renderMenu(data.products);
-                });
+  <nav class="bg-white border-b px-4 py-3 flex gap-2 overflow-x-auto no-scrollbar" id="category-nav"></nav>
+
+  <main class="flex-1 overflow-y-auto p-4 pb-28">
+    <div id="loader" class="text-center py-20 text-gray-400 animate-pulse">
+      <div class="text-4xl mb-3">🍔</div>
+      <p>กำลังเตรียมเมนูอาหาร...</p>
+    </div>
+    <div id="product-list" class="grid grid-cols-2 gap-4"></div>
+  </main>
+
+  <footer id="cart-bar" onclick="openCart()" class="hidden fixed bottom-6 left-1/2 transform -translate-x-1/2 w-[90%] max-w-sm bg-red-600 text-white p-4 rounded-full shadow-2xl justify-between items-center active:scale-95 transition-all cursor-pointer z-30">
+    <div class="flex items-center gap-2">
+      <span class="text-2xl">🛒</span>
+      <span id="badge-qty" class="bg-yellow-400 text-red-900 text-xs font-bold px-2 py-1 rounded-full">0</span>
+    </div>
+    <div class="font-bold flex items-center gap-2">ดูตะกร้า <span id="bar-total-price">฿0.00</span></div>
+  </footer>
+
+  <div id="modal-cart" class="hidden fixed inset-0 bg-white z-[50] flex flex-col">
+    <div class="p-4 border-b flex justify-between items-center bg-gray-50">
+      <h2 class="text-xl font-bold text-gray-800">🛒 ตะกร้าของคุณ</h2>
+      <button onclick="closeCart()" class="text-3xl text-gray-400 hover:text-red-500 px-2">&times;</button>
+    </div>
+    <div id="cart-content" class="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-100"></div>
+    <div class="p-6 bg-white border-t shadow-[0_-10px_20px_rgba(0,0,0,0.05)]">
+      <div class="flex justify-between items-center mb-4 text-xl font-bold text-gray-800">
+        <span>ยอดรวมทั้งหมด:</span>
+        <span class="text-red-600" id="cart-grand-total">฿0.00</span>
+      </div>
+      <button onclick="submitOrder()" class="w-full bg-red-600 text-white py-4 rounded-2xl font-bold text-lg shadow-lg active:scale-95 transition-all">🛎️ ส่งออเดอร์เข้าครัว</button>
+    </div>
+  </div>
+
+  <script>
+    // 🌟 ใส่ลิงก์ Web App Google Script ของคุณตรงนี้! (อันที่ลงท้ายด้วย /exec)
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbze232QP-U4Z9cXDqVDZW9nnl8pmDy-NDafNWKAH6nfn14eTg4euKEjRLs6lPH1bboV_A/exec";
+    
+    // ดึงเลขโต๊ะจาก URL (เช่น ?table=5)
+    const urlParams = new URLSearchParams(window.location.search);
+    let TABLE_NO = urlParams.get('table') || "Preview";
+
+    let masterProducts = [];
+    let masterOptions = [];
+    let shoppingCart = [];
+    let currentCategory = "ทั้งหมด";
+
+    window.onload = () => {
+      document.getElementById('disp-table-id').innerText = TABLE_NO;
+
+      // 🌟 ใช้ fetch ดึงข้อมูลเมนูมาจาก Google Script
+      fetch(`${GAS_URL}?api=getMenu`)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.products) {
+            masterProducts = data.products.filter(p => !p.isHidden);
+            masterOptions = data.options || [];
+            buildUI();
+          } else {
+            showError("ไม่สามารถดึงข้อมูลสินค้าได้");
+          }
+        })
+        .catch(err => {
+            document.getElementById('loader').innerHTML = `
+              <div class="p-6 mx-4 mt-6 bg-red-50 border-2 border-dashed border-red-200 rounded-3xl text-red-700">
+                <h3 class="font-bold text-lg mb-2">⚠️ เชื่อมต่อล้มเหลว</h3>
+                <p class="text-sm">ไม่สามารถดึงข้อมูลจากระบบร้านได้ โปรดตรวจสอบอินเทอร์เน็ตหรือลิงก์ Web App ของคุณ</p>
+              </div>
+            `;
+        });
+    };
+
+    function buildUI() {
+      renderCategories();
+      renderItems();
+      document.getElementById('loader').classList.add('hidden');
+    }
+
+    function renderCategories() {
+      const cats = ["ทั้งหมด", ...new Set(masterProducts.map(p => p.category).filter(c => c))];
+      document.getElementById('category-nav').innerHTML = cats.map(c => `
+        <button onclick="setCat('${c}')" class="px-4 py-2 rounded-full font-bold whitespace-nowrap text-sm transition ${currentCategory === c ? 'bg-red-500 text-white shadow-md' : 'bg-white text-gray-500 border border-red-100'}">${c}</button>
+      `).join('');
+    }
+
+    function setCat(c) { currentCategory = c; renderCategories(); renderItems(); }
+
+    function renderItems() {
+      const items = masterProducts.filter(p => currentCategory === "ทั้งหมด" || p.category === currentCategory);
+      document.getElementById('product-list').innerHTML = items.map(p => {
+        const safeName = p.name.replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+        const safeOpts = (p.options || "").replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+        return `
+        <div class="bg-white p-3 rounded-2xl shadow-sm border border-red-50 flex flex-col justify-between animate-fadeIn">
+          <div>
+            <img src="${p.image || 'https://i.postimg.cc/SxGCt9N2/logo.png'}" class="w-full aspect-square object-cover rounded-xl mb-2 border shadow-sm" onerror="this.src='https://i.postimg.cc/SxGCt9N2/logo.png'">
+            <h3 class="font-bold text-[12px] text-gray-800 line-clamp-2 leading-tight">${p.name}</h3>
+          </div>
+          <div class="mt-2 flex justify-between items-end">
+            <span class="text-red-500 font-bold text-sm">฿${parseFloat(p.price).toFixed(2)}</span>
+            <button onclick="addClick('${safeName}', ${p.price}, '${safeOpts}', '${p.image}')" class="bg-red-50 text-red-500 w-8 h-8 rounded-full font-bold text-xl shadow-sm flex items-center justify-center hover:bg-red-100 transition">+</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function addClick(name, price, opts, img) {
+      if (opts) openOptModal(name, price, opts, img);
+      else pushToCart(name, price, {}, img);
+    }
+
+    function openOptModal(name, price, optStr, img) {
+      const groups = optStr.split(',');
+      const selectedGroups = masterOptions.filter(o => groups.includes(o.name));
+      let html = selectedGroups.map(g => {
+        const items = g.items.toString().split(',');
+        return `<div class="mb-4 text-left"><label class="block font-bold text-sm text-gray-800 mb-2 ml-1">${g.name}</label><div class="grid grid-cols-3 gap-2">${items.map(it => `
+          <label class="cursor-pointer h-full">
+            <input type="checkbox" name="opt-${g.name}" value="${it.trim()}" class="hidden peer">
+            <div class="opt-card p-2 text-[11px] font-bold text-center h-full min-h-[45px] flex items-center justify-center leading-tight shadow-sm">${it.trim()}</div>
+          </label>`).join('')}</div></div>`;
+      }).join('');
+
+      Swal.fire({
+        title: `<div class="text-xl font-bold text-gray-800 pb-2 border-b-2 border-gray-100">${name}</div>`,
+        html: `<div class="max-h-[50vh] overflow-y-auto px-1 mt-4">${html}</div>`,
+        showCancelButton: true, confirmButtonText: '➕ เพิ่มลงตะกร้า', confirmButtonColor: '#ef4444', cancelButtonText: 'ยกเลิก',
+        preConfirm: () => {
+          const vals = {}; let extra = 0;
+          selectedGroups.forEach(g => {
+            const checked = Array.from(document.querySelectorAll(`input[name="opt-${g.name}"]:checked`)).map(el => el.value);
+            if (checked.length) {
+              vals[g.name] = checked.join(', ');
+              checked.forEach(v => { const m = v.match(/\(\+(\d+)\)/); if(m) extra += parseFloat(m[1]); });
+            }
+          });
+          return { vals, extra };
         }
+      }).then(res => { if(res.isConfirmed) pushToCart(name, price + res.value.extra, res.value.vals, img); });
+    }
 
-        // ฟังก์ชันส่งออเดอร์กลับไป GAS
-        function sendOrder(cart, total) {
-            const orderData = {
-                tableNo: tableNo,
-                itemsStr: cart.map(i => `${i.name} x${i.qty}`).join(', '),
-                total: total,
-                cart: cart
-            };
+    function pushToCart(name, price, opts, img) {
+      const key = name + JSON.stringify(opts);
+      const exist = shoppingCart.find(i => i.key === key);
+      if (exist) exist.qty++;
+      else shoppingCart.push({ key, name, price, opts, img, qty: 1 });
+      refreshCartUI();
+      Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'เพิ่มลงตะกร้าแล้ว', showConfirmButton: false, timer: 1000 });
+    }
 
-            fetch(GAS_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: 'submitOrder', data: orderData })
-            })
-            .then(res => res.json())
-            .then(res => {
-                if(res.success) Swal.fire('สำเร็จ', res.message, 'success');
-            });
+    function refreshCartUI() {
+      const total = shoppingCart.reduce((s, i) => s + (i.price * i.qty), 0);
+      const qty = shoppingCart.reduce((s, i) => s + i.qty, 0);
+      
+      document.getElementById('badge-qty').innerText = qty;
+      document.getElementById('bar-total-price').innerText = '฿' + total.toFixed(2);
+      document.getElementById('cart-grand-total').innerText = '฿' + total.toFixed(2);
+      
+      document.getElementById('cart-bar').classList.toggle('hidden', qty === 0);
+      document.getElementById('cart-bar').classList.toggle('flex', qty > 0);
+      
+      const cartContainer = document.getElementById('cart-content');
+      if (qty === 0) {
+        cartContainer.innerHTML = '<p class="text-center text-gray-400 mt-10">ตะกร้าว่างเปล่า</p>';
+      } else {
+        cartContainer.innerHTML = shoppingCart.map((item, idx) => `
+          <div class="bg-white p-3 rounded-xl flex items-center gap-3 shadow-sm border border-gray-100 animate-fadeIn">
+            <img src="${item.img || 'https://i.postimg.cc/SxGCt9N2/logo.png'}" class="w-16 h-16 rounded-lg object-cover border" onerror="this.src='https://i.postimg.cc/SxGCt9N2/logo.png'">
+            <div class="flex-1">
+              <h4 class="font-bold text-sm text-gray-800 leading-tight">${item.name}</h4>
+              <p class="text-[10px] text-gray-500 leading-tight">${Object.values(item.opts).join(', ')}</p>
+              <p class="text-red-500 font-bold text-sm mt-1">฿${(item.price * item.qty).toFixed(2)}</p>
+            </div>
+            <div class="flex items-center gap-2 bg-gray-50 rounded-full py-1 px-2 border">
+              <button onclick="changeCartQty(${idx}, -1)" class="text-lg text-gray-500 px-2 font-bold hover:text-red-500">-</button>
+              <span class="font-bold text-sm w-4 text-center">${item.qty}</span>
+              <button onclick="changeCartQty(${idx}, 1)" class="text-lg text-red-500 px-2 font-bold hover:text-red-600">+</button>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    function changeCartQty(i, d) { shoppingCart[i].qty += d; if (shoppingCart[i].qty <= 0) shoppingCart.splice(i, 1); refreshCartUI(); }
+    function openCart() { document.getElementById('modal-cart').classList.remove('hidden'); }
+    function closeCart() { document.getElementById('modal-cart').classList.add('hidden'); }
+
+    function submitOrder() {
+      if (!shoppingCart.length) return;
+      
+      const itemsStr = shoppingCart.map(i => {
+        const optPart = Object.values(i.opts).length ? ` (${Object.values(i.opts).join(', ')})` : '';
+        return `${i.name}${optPart} x${i.qty}`;
+      }).join(' | ');
+
+      const orderData = {
+          tableNo: TABLE_NO,
+          itemsStr: itemsStr,
+          total: shoppingCart.reduce((s, i) => s + (i.price * i.qty), 0),
+          cart: shoppingCart
+      };
+      
+      Swal.fire({ title: 'ยืนยันสั่งอาหาร?', text: 'ออเดอร์จะถูกส่งตรงไปยังครัวทันทีครับ', icon: 'question', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'ตกลง', cancelButtonText: 'ยกเลิก' }).then(res => {
+        if (res.isConfirmed) {
+          Swal.fire({ title: 'กำลังส่งออเดอร์...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+          
+          // 🌟 ใช้ fetch ส่งข้อมูลออเดอร์กลับไปที่ Google Script
+          fetch(GAS_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'submitOrder', data: orderData })
+          })
+          .then(res => res.json())
+          .then(res => {
+              if (res.success) {
+                  Swal.fire({ icon: 'success', title: 'สั่งสำเร็จ!', text: res.message, confirmButtonColor: '#ef4444' }).then(() => { 
+                    shoppingCart = []; refreshCartUI(); closeCart(); 
+                  });
+              } else {
+                  showError(res.error);
+              }
+          })
+          .catch(err => showError(err));
         }
-        
-        window.onload = loadMenu;
-    </script>
+      });
+    }
+
+    function viewHistory() {
+      const content = document.getElementById('hist-body') || document.createElement('div');
+      content.id = 'hist-body';
+      content.className = 'text-left space-y-2 py-4';
+      content.innerHTML = '<p class="text-center text-gray-400 py-10 animate-pulse">กำลังโหลดประวัติ...</p>';
+
+      Swal.fire({ title: '🕒 ประวัติการสั่งโต๊ะ ' + TABLE_NO, html: content, showConfirmButton: false, showCloseButton: true });
+      
+      // 🌟 ใช้ fetch ดึงประวัติการสั่งของโต๊ะนั้น
+      fetch(`${GAS_URL}?api=getHistory&table=${TABLE_NO}`)
+        .then(res => res.json())
+        .then(h => {
+            const div = document.getElementById('hist-body');
+            if (!div) return;
+            div.innerHTML = h.length ? h.map(i => `
+              <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-3">
+                <div class="flex justify-between items-start mb-2 border-b pb-2">
+                  <span class="text-xs font-bold text-gray-400">${i.timestamp}</span>
+                  <span class="px-2 py-1 rounded-md text-[10px] font-bold ${i.status === 'New' ? 'bg-orange-50 text-orange-500 border border-orange-200' : 'bg-green-50 text-green-500 border border-green-200'}">${i.status === 'New' ? '⏳ รอรับออเดอร์' : '✅ รับออเดอร์แล้ว'}</span>
+                </div>
+                <div class="text-sm text-gray-700 leading-relaxed">${i.items}</div>
+                <div class="text-right font-bold text-red-600 mt-2">รวม ฿${parseFloat(i.total).toFixed(2)}</div>
+              </div>`).join('') : '<div class="text-center py-10"><span class="text-5xl">📄</span><p class="text-gray-400 mt-4">ยังไม่มีรายการที่ค้างชำระ</p></div>';
+        })
+        .catch(err => showError(err));
+    }
+
+    function showError(msg) {
+      Swal.fire("ข้อผิดพลาด", msg.toString(), "error");
+    }
+  </script>
 </body>
 </html>
