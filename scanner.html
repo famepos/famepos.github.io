@@ -1,96 +1,97 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>สแกนบาร์โค้ด - FamePOS</title>
-    
-    <script src="https://unpkg.com/html5-qrcode"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>สแกนบาร์โค้ด</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <style>
+    body { margin: 0; background: #111; color: white; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+    #reader { flex: 1; width: 100%; background: #000; display: flex; justify-content: center; align-items: center; }
+    .header { padding: 15px; text-align: center; font-weight: bold; font-size: 18px; background: #222; color: #10b981; }
+    .controls { display: flex; padding: 10px; gap: 10px; background: #222; padding-bottom: 25px; }
+    .btn { flex: 1; padding: 15px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; border-radius: 8px; }
+    .btn-switch { background: #3b82f6; color: white; display: none; }
+    .btn-close { background: #ef4444; color: white; }
+  </style>
 </head>
-<body class="bg-gray-900 flex flex-col items-center justify-center h-screen m-0 overflow-hidden">
-    
-    <div class="w-full max-w-md p-4 flex flex-col items-center">
-        <h2 class="text-white text-xl font-bold mb-4 flex items-center gap-2">
-            <span class="animate-pulse">🔴</span> กำลังสแกนบาร์โค้ด...
-        </h2>
+<body>
+  <div class="header">📷 สแกนบาร์โค้ดสินค้า</div>
+  
+  <div id="reader"></div>
+  
+  <div class="controls">
+    <button id="btn-switch" class="btn btn-switch" onclick="switchCamera()">🔄 สลับกล้อง</button>
+    <button class="btn btn-close" onclick="window.close()">❌ ปิดหน้าต่าง</button>
+  </div>
+
+  <script>
+    let html5QrCode;
+    let availableCameras = [];
+    let currentCameraIndex = 0;
+
+    // 🔥 เปิดโหมดเทอร์โบ และตั้งค่าการสแกน
+    const config = { 
+      fps: 20, 
+      qrbox: { width: 280, height: 120 },
+      experimentalFeatures: {
+        useBarCodeDetectorIfSupported: true // 🌟 ฟีเจอร์ลับ! ดึง Hardware มือถือมาช่วยอ่านขวดโค้งๆ
+      },
+      formatsToSupport: [ 
+        Html5QrcodeSupportedFormats.EAN_13, // EAN-13 ของขวด Oriental Princess
+        Html5QrcodeSupportedFormats.EAN_8,
+        Html5QrcodeSupportedFormats.CODE_128, 
+        Html5QrcodeSupportedFormats.CODE_39, 
+        Html5QrcodeSupportedFormats.UPC_A, 
+        Html5QrcodeSupportedFormats.QR_CODE 
+      ]
+    };
+
+    html5QrCode = new Html5Qrcode("reader");
+
+    Html5Qrcode.getCameras().then(devices => {
+      if (devices && devices.length > 0) {
+        availableCameras = devices;
         
-        <div id="reader" class="w-full bg-black rounded-3xl overflow-hidden border-4 border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.5)] min-h-[300px] flex items-center justify-center relative">
-            <div id="loading-text" class="text-white text-center absolute z-10">
-                กำลังตรวจสอบกล้อง...<br>
-                <span class="text-xs text-gray-400">(หากมี Popup ให้กด Allow / อนุญาต)</span>
-            </div>
-        </div>
-        
-        <p class="text-gray-400 text-[11px] mt-6 text-center bg-gray-800 px-4 py-2 rounded-xl">
-            พยายามให้บาร์โค้ดอยู่ตรงกลางกรอบสี่เหลี่ยม<br>(รองรับ EAN-13, Code-128 และ QR Code)
-        </p>
+        // หากล้องหลัง
+        let backCameraIndex = devices.findIndex(d => 
+          d.label.toLowerCase().includes('back') || 
+          d.label.toLowerCase().includes('environment')
+        );
+        if (backCameraIndex !== -1) currentCameraIndex = backCameraIndex;
 
-        <button onclick="window.close()" class="mt-8 bg-gray-700 hover:bg-gray-600 text-white px-8 py-3 rounded-2xl font-bold transition active:scale-95">
-            ❌ ยกเลิก / ปิดหน้าต่าง
-        </button>
-    </div>
-
-    <script>
-        const html5QrCode = new Html5Qrcode("reader");
-
-        function onScanSuccess(decodedText, decodedResult) {
-            html5QrCode.stop().then(() => {
-                const beep = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-                beep.play().catch(()=>console.log('Audio play blocked'));
-
-                if (window.opener) {
-                    window.opener.postMessage({ type: 'BARCODE_SCANNED', code: decodedText }, '*');
-                }
-                
-                setTimeout(() => { window.close(); }, 300);
-            }).catch(err => console.log(err));
+        if (devices.length > 1) {
+          document.getElementById('btn-switch').style.display = 'block';
         }
+        startScanner();
+      } else {
+        document.getElementById('reader').innerHTML = '<p style="text-align:center;">ไม่พบกล้องบนอุปกรณ์นี้</p>';
+      }
+    }).catch(err => {
+      document.getElementById('reader').innerHTML = '<p style="color:red; text-align:center;">กรุณาอนุญาตสิทธิ์กล้องบนเบราว์เซอร์</p>';
+    });
 
-        function onScanFailure(error) { 
-            // ปล่อยผ่าน ไม่ต้องแจ้งเตือนทุกครั้งที่หาสแกนไม่เจอ
+    function startScanner() {
+      html5QrCode.start(
+        availableCameras[currentCameraIndex].id,
+        config,
+        (decodedText) => {
+          if (window.opener) {
+            window.opener.postMessage({ type: 'BARCODE_SCANNED', code: decodedText }, '*');
+          }
+          html5QrCode.stop().then(() => window.close());
         }
+      ).catch(err => console.log(err));
+    }
 
-        const config = {
-            fps: 15,
-            qrbox: { width: 250, height: 120 }, // กรอบแนวนอน สแกนง่ายขึ้น
-            aspectRatio: 1.0,
-            formatsToSupport: [ 
-                Html5QrcodeSupportedFormats.EAN_13, 
-                Html5QrcodeSupportedFormats.CODE_128, 
-                Html5QrcodeSupportedFormats.QR_CODE 
-            ]
-        };
-
-        // 🌟 ระบบค้นหากล้องอัจฉริยะ (รองรับทั้งคอมและมือถือ)
-        Html5Qrcode.getCameras().then(devices => {
-            if (devices && devices.length > 0) {
-                // 1. ลองพยายามเปิดกล้องหลังก่อน (สำหรับคนเปิดผ่านมือถือ)
-                html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, onScanFailure)
-                .then(() => { 
-                    document.getElementById('loading-text').style.display = 'none'; 
-                })
-                .catch((err) => {
-                    // 2. ถ้าเปิดกล้องหลังไม่สำเร็จ (แปลว่าเปิดบนคอม) ให้เอากล้องตัวแรกสุดที่หาเจอมาเปิดแทน (Webcam)
-                    html5QrCode.start(devices[0].id, config, onScanSuccess, onScanFailure)
-                    .then(() => { 
-                        document.getElementById('loading-text').style.display = 'none'; 
-                    })
-                    .catch(finalErr => showError());
-                });
-            } else {
-                showError();
-            }
-        }).catch(err => {
-            showError();
-        });
-
-        function showError() {
-            document.getElementById('loading-text').innerHTML = `
-                <span class="text-red-500 font-bold">❌ ไม่สามารถเปิดกล้องได้</span><br>
-                <span class="text-xs text-gray-400 mt-2 block">1. ตรวจสอบว่ามีกล้องเชื่อมต่ออยู่หรือไม่<br>2. กดไอคอนแม่กุญแจ 🔒 บนช่อง URL แล้วกด "อนุญาต"</span>
-            `;
-        }
-    </script>
+    function switchCamera() {
+      if (availableCameras.length > 1) {
+        html5QrCode.stop().then(() => {
+          currentCameraIndex = (currentCameraIndex + 1) % availableCameras.length;
+          startScanner();
+        }).catch(err => console.error(err));
+      }
+    }
+  </script>
 </body>
 </html>
