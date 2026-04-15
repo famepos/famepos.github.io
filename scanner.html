@@ -1,97 +1,79 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>สแกนบาร์โค้ด</title>
-  <script src="https://unpkg.com/html5-qrcode"></script>
-  <style>
-    body { margin: 0; background: #111; color: white; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-    #reader { flex: 1; width: 100%; background: #000; display: flex; justify-content: center; align-items: center; }
-    .header { padding: 15px; text-align: center; font-weight: bold; font-size: 18px; background: #222; color: #10b981; }
-    .controls { display: flex; padding: 10px; gap: 10px; background: #222; padding-bottom: 25px; }
-    .btn { flex: 1; padding: 15px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; border-radius: 8px; }
-    .btn-switch { background: #3b82f6; color: white; display: none; }
-    .btn-close { background: #ef4444; color: white; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>สแกนบาร์โค้ด - FamePOS</title>
+    
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-  <div class="header">📷 สแกนบาร์โค้ดสินค้า</div>
-  
-  <div id="reader"></div>
-  
-  <div class="controls">
-    <button id="btn-switch" class="btn btn-switch" onclick="switchCamera()">🔄 สลับกล้อง</button>
-    <button class="btn btn-close" onclick="window.close()">❌ ปิดหน้าต่าง</button>
-  </div>
-
-  <script>
-    let html5QrCode;
-    let availableCameras = [];
-    let currentCameraIndex = 0;
-
-    // 🔥 เปิดโหมดเทอร์โบ และตั้งค่าการสแกน
-    const config = { 
-      fps: 20, 
-      qrbox: { width: 280, height: 120 },
-      experimentalFeatures: {
-        useBarCodeDetectorIfSupported: true // 🌟 ฟีเจอร์ลับ! ดึง Hardware มือถือมาช่วยอ่านขวดโค้งๆ
-      },
-      formatsToSupport: [ 
-        Html5QrcodeSupportedFormats.EAN_13, // EAN-13 ของขวด Oriental Princess
-        Html5QrcodeSupportedFormats.EAN_8,
-        Html5QrcodeSupportedFormats.CODE_128, 
-        Html5QrcodeSupportedFormats.CODE_39, 
-        Html5QrcodeSupportedFormats.UPC_A, 
-        Html5QrcodeSupportedFormats.QR_CODE 
-      ]
-    };
-
-    html5QrCode = new Html5Qrcode("reader");
-
-    Html5Qrcode.getCameras().then(devices => {
-      if (devices && devices.length > 0) {
-        availableCameras = devices;
+<body class="bg-gray-900 flex flex-col items-center justify-center h-screen m-0 overflow-hidden">
+    
+    <div class="w-full max-w-md p-4 flex flex-col items-center">
+        <h2 class="text-white text-xl font-bold mb-4 flex items-center gap-2">
+            <span class="animate-pulse">🔴</span> กำลังสแกนบาร์โค้ด...
+        </h2>
         
-        // หากล้องหลัง
-        let backCameraIndex = devices.findIndex(d => 
-          d.label.toLowerCase().includes('back') || 
-          d.label.toLowerCase().includes('environment')
+        <div id="reader" class="w-full bg-black rounded-3xl overflow-hidden border-4 border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.5)]"></div>
+        
+        <p class="text-gray-400 text-[11px] mt-6 text-center bg-gray-800 px-4 py-2 rounded-xl">
+            พยายามให้บาร์โค้ดอยู่ตรงกลางกรอบสีเหลี่ยม<br>(รองรับ EAN-13, Code-128 และ QR Code)
+        </p>
+
+        <button onclick="window.close()" class="mt-8 bg-gray-700 hover:bg-gray-600 text-white px-8 py-3 rounded-2xl font-bold transition active:scale-95">
+            ❌ ยกเลิก / ปิดหน้าต่าง
+        </button>
+    </div>
+
+    <script>
+        // 1. ฟังก์ชันเมื่อสแกนติด
+        function onScanSuccess(decodedText, decodedResult) {
+            // เล่นเสียงติ๊ง
+            const beep = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+            beep.play().catch(()=>console.log('Audio play blocked'));
+
+            // ส่งรหัสกลับไปให้หน้า POS หลัก
+            if (window.opener) {
+                window.opener.postMessage({ type: 'BARCODE_SCANNED', code: decodedText }, '*');
+            }
+            
+            // ปิดกล้องและปิดหน้าต่างทันที
+            html5QrcodeScanner.clear();
+            setTimeout(() => { window.close(); }, 300);
+        }
+
+        // 2. ฟังก์ชันเมื่อสแกนไม่เจอ (ปล่อยว่างไว้ ไม่ต้องให้มันแจ้งเตือนกวนใจ)
+        function onScanFailure(error) {
+            // ไม่ต้องทำอะไร
+        }
+
+        // 3. ตั้งค่าตัวสแกนให้เหมาะกับ EAN-13
+        let html5QrcodeScanner = new Html5QrcodeScanner(
+            "reader",
+            { 
+                fps: 15, 
+                qrbox: { width: 250, height: 120 }, // 🌟 บีบกรอบสแกนให้เป็นแนวนอน จะช่วยให้อ่านบาร์โค้ดแท่งได้ดีขึ้น 300%
+                aspectRatio: 1.0,
+                formatsToSupport: [ 
+                    Html5QrcodeSupportedFormats.EAN_13, // สำหรับบาร์โค้ดสินค้าทั่วไป (เช่น 885)
+                    Html5QrcodeSupportedFormats.CODE_128, // สำหรับบาร์โค้ดพิมพ์เอง
+                    Html5QrcodeSupportedFormats.QR_CODE 
+                ]
+            },
+            false // ไม่โชว์ log กวนใจ
         );
-        if (backCameraIndex !== -1) currentCameraIndex = backCameraIndex;
+        
+        // 4. สั่งเริ่มเปิดกล้องทันที
+        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+    </script>
 
-        if (devices.length > 1) {
-          document.getElementById('btn-switch').style.display = 'block';
-        }
-        startScanner();
-      } else {
-        document.getElementById('reader').innerHTML = '<p style="text-align:center;">ไม่พบกล้องบนอุปกรณ์นี้</p>';
-      }
-    }).catch(err => {
-      document.getElementById('reader').innerHTML = '<p style="color:red; text-align:center;">กรุณาอนุญาตสิทธิ์กล้องบนเบราว์เซอร์</p>';
-    });
-
-    function startScanner() {
-      html5QrCode.start(
-        availableCameras[currentCameraIndex].id,
-        config,
-        (decodedText) => {
-          if (window.opener) {
-            window.opener.postMessage({ type: 'BARCODE_SCANNED', code: decodedText }, '*');
-          }
-          html5QrCode.stop().then(() => window.close());
-        }
-      ).catch(err => console.log(err));
-    }
-
-    function switchCamera() {
-      if (availableCameras.length > 1) {
-        html5QrCode.stop().then(() => {
-          currentCameraIndex = (currentCameraIndex + 1) % availableCameras.length;
-          startScanner();
-        }).catch(err => console.error(err));
-      }
-    }
-  </script>
+    <style>
+        #reader__dashboard_section_csr span { color: white !important; }
+        #reader__dashboard_section_swaplink { color: #ef4444 !important; text-decoration: none !important; font-weight: bold; }
+        #reader__camera_permission_button { background: #ef4444 !important; color: white !important; border: none !important; border-radius: 10px; padding: 10px 20px; font-weight: bold; }
+        #reader__dashboard_section_csr select { padding: 5px; border-radius: 5px; }
+        #reader a { display: none; }
+    </style>
 </body>
 </html>
