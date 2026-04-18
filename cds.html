@@ -17,7 +17,7 @@
       <header class="bg-red-600 text-white p-6 shadow-md flex justify-between items-center">
         <h1 class="text-3xl font-bold">รายการสั่งซื้อ</h1>
         <div id="connection-status" class="text-sm font-bold bg-green-500 px-3 py-1 rounded-full animate-pulse">
-            เชื่อมต่อแล้ว
+            รอการเชื่อมต่อ...
         </div>
       </header>
       <div id="cart-list" class="flex-1 overflow-y-auto p-6 space-y-4">
@@ -51,32 +51,44 @@
   </div>
 
   <script>
-    // ฟังก์ชันอ่านข้อมูลจาก Local Storage และอัปเดตหน้าจอ
-    function checkCartUpdate() {
-      try {
-        const storedData = localStorage.getItem('famepos_cds_data');
-        if (storedData) {
-          const data = JSON.parse(storedData);
-          
-          if (data.type === 'UPDATE_CART') {
-            renderCart(data.cart, data.total);
-            if (data.qrUrl) {
-              document.getElementById('qr-img').src = data.qrUrl;
-              document.getElementById('qr-area').classList.remove('hidden');
-            } else {
-              document.getElementById('qr-area').classList.add('hidden');
-            }
-          } else if (data.type === 'CLEAR') {
-             // เคลียร์หน้าจอ
-             renderCart([], 0);
-             document.getElementById('qr-area').classList.add('hidden');
-          }
-        }
-      } catch (e) {
-        console.error("Error reading CDS data:", e);
-      }
-    }
+    const connectionStatus = document.getElementById('connection-status');
 
+    // 🌟 รับข้อมูลจากหน้าแคชเชียร์ (Google Apps Script) แบบข้ามโดเมน
+    window.addEventListener('message', function(event) {
+      
+      // เปลี่ยนป้ายสถานะว่าเชื่อมต่อสำเร็จแล้ว
+      connectionStatus.innerText = "เชื่อมต่อแล้ว";
+      connectionStatus.classList.remove('bg-gray-400', 'animate-pulse');
+      connectionStatus.classList.add('bg-green-500');
+
+      const data = event.data;
+
+      if (data.type === 'UPDATE_CART') {
+        renderCart(data.cart, data.total);
+        
+        // จัดการโชว์/ซ่อน QR Code
+        if (data.qrUrl) {
+          document.getElementById('qr-img').src = data.qrUrl;
+          document.getElementById('qr-area').classList.remove('hidden');
+        } else {
+          document.getElementById('qr-area').classList.add('hidden');
+        }
+        
+      } else if (data.type === 'CLEAR') {
+        // กลับไปเป็นหน้าต้อนรับ
+        renderCart([], 0);
+        document.getElementById('qr-area').classList.add('hidden');
+        
+        // เคลียร์ป้ายสถานะกลับเป็นรอรับออเดอร์ใหม่
+        setTimeout(() => {
+          connectionStatus.innerText = "พร้อมรับรายการ";
+          connectionStatus.classList.remove('bg-green-500');
+          connectionStatus.classList.add('bg-gray-400', 'animate-pulse');
+        }, 3000);
+      }
+    });
+
+    // ฟังก์ชันวาดตะกร้าบนหน้าจอ
     function renderCart(cart, total) {
       const list = document.getElementById('cart-list');
       document.getElementById('total-amount').innerText = '฿' + (total || 0).toFixed(2);
@@ -99,20 +111,6 @@
         </div>
       `).join('');
     }
-
-    // ฟังเหตุการณ์การเปลี่ยนแปลงของ Local Storage (ทำงานข้าม Tab/Window ได้)
-    window.addEventListener('storage', function(e) {
-      if (e.key === 'famepos_cds_data') {
-        checkCartUpdate();
-      }
-    });
-
-    // ดึงข้อมูลครั้งแรกตอนโหลดหน้า
-    checkCartUpdate();
-    
-    // ตั้งเวลาเช็คซ้ำเผื่อ Event Listener ไม่ทำงาน
-    setInterval(checkCartUpdate, 1000); 
-
   </script>
 </body>
 </html>
