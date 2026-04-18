@@ -122,12 +122,12 @@
     window.onload = fetchCFDState;
 
     // ฟังก์ชันวาดหน้าจอ (ใช้ของเดิมที่คุณมีได้เลยครับ)
-    function renderCFD(data) {
-      // 1. อัปเดตข้อมูลร้าน
-      document.getElementById('cfd-logo').src = data.shopLogo;
-      document.getElementById('cfd-shop-name').innerText = data.shopName;
+function renderCFD(data) {
+      // 🌟 ใส่โลโก้ร้านตรงๆ ไปเลยที่นี่ ไม่ต้องดึงจาก Database
+      document.getElementById('cfd-logo').src = "https://i.postimg.cc/SxGCt9N2/logo.png";
+      document.getElementById('cfd-shop-name').innerText = data.shopName || "FamePOS";
 
-      // Element References
+      // ... (โค้ดดึง Element อื่นๆ ของเดิม) ...
       const idleState = document.getElementById('cfd-idle-state');
       const cartItems = document.getElementById('cfd-cart-items');
       const paymentArea = document.getElementById('cfd-payment-area');
@@ -144,7 +144,7 @@
         successScreen.classList.add('hidden');
       }
 
-      if (data.cart.length === 0 || data.status === 'idle') {
+      if (!data.cart || data.cart.length === 0 || data.status === 'idle') {
         idleState.classList.remove('hidden');
         cartItems.classList.add('hidden');
         paymentArea.classList.add('hidden');
@@ -201,10 +201,11 @@
           document.getElementById('cfd-received').innerText = `฿${data.received.toFixed(2)}`;
           document.getElementById('cfd-change').innerText = `฿${data.change.toFixed(2)}`;
         } 
-        else if (data.method === 'สแกนจ่าย' && data.qrSrc) {
+        else if (data.method === 'สแกนจ่าย' && data.ppNo) {
           payCash.classList.add('hidden');
           payQR.classList.remove('hidden');
-          document.getElementById('cfd-qr-img').src = data.qrSrc;
+          // 🌟 ให้หน้า Github เจน QR เองเลย ไม่ต้องรอรูปจาก Google
+          document.getElementById('cfd-qr-img').src = `https://promptpay.io/${data.ppNo}/${data.netTotal.toFixed(2)}.png`;
         } 
         else {
            payCash.classList.add('hidden');
