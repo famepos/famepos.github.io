@@ -98,11 +98,18 @@
     const GAS_URL = "https://script.google.com/macros/s/AKfycbxqmIYIYrhEeAMvxFlDY3K4c0iRSXaUxFNrn-TUmouG-nRnmGyvDPocbsK4MGDVz_ZEBQ/exec";
 
     // ฟังก์ชันวิ่งไปดึงข้อมูลจาก Server
+// ฟังก์ชันวิ่งไปดึงข้อมูลจาก Server (อัปเดตแก้ปัญหา Cache)
     async function fetchCFDState() {
       try {
-        const response = await fetch(`${GAS_URL}?api=getCFD`);
+        // เพิ่มเวลา (Timestamp) ต่อท้ายลิงก์ เพื่อหลอกเบราว์เซอร์ว่าเป็นลิงก์ใหม่เสมอ (Cache Busting)
+        const timestamp = new Date().getTime();
+        const fetchUrl = `${GAS_URL}?api=getCFD&t=${timestamp}`;
+
+        const response = await fetch(fetchUrl, { cache: 'no-store' }); // บังคับไม่ให้จำค่า
         const data = await response.json();
+        
         if (data) {
+          // สั่งให้วาดหน้าจอใหม่
           renderCFD(data);
         }
       } catch (error) {
