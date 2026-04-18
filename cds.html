@@ -41,20 +41,19 @@
         
         let lastStateStr = "";
 
-        function pollUpdate() {
-            fetch(`${GAS_URL}?api=getCDS&_=${new Date().getTime()}`)
-                .then(res => res.json())
-                .then(data => {
-                    // ป้องกันหน้าจอกระพริบ (อัปเดตเฉพาะตอนข้อมูลเปลี่ยน)
-                    const currentStateStr = JSON.stringify(data);
-                    if (currentStateStr !== lastStateStr) {
-                        updateUI(data);
-                        lastStateStr = currentStateStr;
-                    }
-                })
-                .catch(err => console.log("Poll waiting..."));
-        }
-
+  function pollUpdate() {
+    fetch(`${GAS_URL}?api=getCDS&_=${new Date().getTime()}`)
+        .then(res => res.json())
+        .then(data => {
+            console.log("📥 CDS Received:", data.status, data); // 🔍 กด F12 ดูในหน้า CDS
+            const currentStateStr = JSON.stringify(data);
+            if (currentStateStr !== lastStateStr) {
+                updateUI(data);
+                lastStateStr = currentStateStr;
+            }
+        })
+        .catch(err => console.log("⏳ Waiting for Server..."));
+}
         function updateUI(data) {
             const list = document.getElementById('cart-list');
             const rightPanel = document.getElementById('cds-right-panel');
