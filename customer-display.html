@@ -94,21 +94,27 @@
       document.getElementById('cfd-clock').innerText = new Date().toLocaleTimeString('th-TH');
     }, 1000);
 
-    // รับข้อมูลจากหน้า POS แบบ Real-time ผ่าน LocalStorage
-    window.addEventListener('storage', function(e) {
-      if (e.key === 'famepos_cfd_sync') {
-        const data = JSON.parse(e.newValue);
-        if (!data) return;
-        renderCFD(data);
+    // 🌟 ใส่ลิงก์ Web App Google Script ของคุณตรงนี้! (อันที่ลงท้ายด้วย /exec)
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbxqmIYIYrhEeAMvxFlDY3K4c0iRSXaUxFNrn-TUmouG-nRnmGyvDPocbsK4MGDVz_ZEBQ/exec";
+
+    // ฟังก์ชันวิ่งไปดึงข้อมูลจาก Server
+    async function fetchCFDState() {
+      try {
+        const response = await fetch(`${GAS_URL}?api=getCFD`);
+        const data = await response.json();
+        if (data) {
+          renderCFD(data);
+        }
+      } catch (error) {
+        console.error("กำลังเชื่อมต่อข้อมูล...", error);
       }
-    });
+    }
 
-    // โหลดข้อมูลล่าสุดทันทีเมื่อเปิดหน้า
-    window.onload = () => {
-      const initData = localStorage.getItem('famepos_cfd_sync');
-      if(initData) renderCFD(JSON.parse(initData));
-    };
+    // สั่งให้ดึงข้อมูลใหม่ทุกๆ 2 วินาที
+    setInterval(fetchCFDState, 2000);
+    window.onload = fetchCFDState;
 
+    // ฟังก์ชันวาดหน้าจอ (ใช้ของเดิมที่คุณมีได้เลยครับ)
     function renderCFD(data) {
       // 1. อัปเดตข้อมูลร้าน
       document.getElementById('cfd-logo').src = data.shopLogo;
@@ -144,20 +150,27 @@
       // 3. แสดงตะกร้าสินค้า
       idleState.classList.add('hidden');
       cartItems.classList.remove('hidden');
-      cartItems.innerHTML = data.cart.map(item => `
+      cartItems.innerHTML = data.cart.map(item => {
+        let optionsHtml = '';
+        if (item.options) {
+          const optsArray = typeof item.options === 'object' ? Object.values(item.options) : [item.options];
+          if (optsArray.length > 0 && optsArray[0] !== "") {
+            optionsHtml = `<div class="text-sm text-gray-500">${optsArray.join(', ')}</div>`;
+          }
+        }
+        return `
         <div class="flex justify-between items-center bg-gray-50 p-4 rounded-2xl border border-gray-100">
           <div class="flex items-center gap-4">
             <div class="bg-red-100 text-red-600 font-bold w-10 h-10 rounded-full flex items-center justify-center text-lg">${item.qty}</div>
             <div>
               <div class="text-xl font-bold text-gray-800">${item.name}</div>
-              ${Object.values(item.options || {}).length > 0 ? `<div class="text-sm text-gray-500">${Object.values(item.options).join(', ')}</div>` : ''}
+              ${optionsHtml}
             </div>
           </div>
           <div class="text-xl font-bold text-red-600">฿${(item.price * item.qty).toFixed(2)}</div>
-        </div>
-      `).join('');
+        </div>`;
+      }).join('');
 
-      // เลื่อนหน้าจอลงล่างสุดอัตโนมัติเมื่อเพิ่มของ
       cartItems.scrollTop = cartItems.scrollHeight;
 
       // 4. แสดงยอดเงิน
@@ -187,7 +200,6 @@
           document.getElementById('cfd-qr-img').src = data.qrSrc;
         } 
         else {
-           // กรณีวิธีอื่น (เดลิเวอรี่/คนละครึ่ง) ให้โชว์กล่องเปล่าๆ ว่ากำลังชำระ
            payCash.classList.add('hidden');
            payQR.classList.add('hidden');
         }
