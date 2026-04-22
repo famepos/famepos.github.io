@@ -318,41 +318,41 @@
         }
     }
 
-// 🌟 ฟังก์ชันสลับภาพ (ทำงานวนลูปไปเรื่อยๆ)
-    function showNextSlide() {
-        const imgElement = document.getElementById('screensaver-img');
-        if (activeAds.length === 0) return;
+// 🌟 แก้ไขฟังก์ชันสลับภาพให้ชื่อตัวแปรตรงกับหลังบ้าน
+function showNextSlide() {
+    const imgElement = document.getElementById('screensaver-img');
+    if (activeAds.length === 0) return;
 
-        const currentAd = activeAds[currentSlideIndex];
-        const displayDuration = (currentAd.duration || 5) * 1000; // แปลงวินาทีเป็นมิลลิวินาที
+    const currentAd = activeAds[currentSlideIndex];
+    const displayDuration = (currentAd.duration || 5) * 1000;
 
-        // 1. โชว์รูปปัจจุบัน
-        imgElement.src = currentAd.imageUrl;
-        imgElement.style.opacity = 1;
+    // 1. โชว์รูปปัจจุบัน (แก้จาก imageUrl เป็น url)
+    imgElement.src = currentAd.url; 
+    imgElement.style.opacity = 1;
 
-        // 2. ตั้งเวลารอเปลี่ยนรูปถัดไป ตามที่ตั้งค่ามา
-        clearTimeout(slideTimer);
-        slideTimer = setTimeout(() => {
-            
-            // เฟดรูปเก่าออก
-            imgElement.style.opacity = 0;
-            
-            // รอ 0.5 วิ ให้มันจางหายไป แล้วค่อยเปลี่ยนรูป
-            setTimeout(() => {
-                currentSlideIndex = (currentSlideIndex + 1) % activeAds.length;
-                showNextSlide(); // เรียกตัวเองซ้ำ (วนลูป)
-            }, 500);
+    // 2. ตั้งเวลารอเปลี่ยนรูปถัดไป
+    clearTimeout(slideTimer);
+    slideTimer = setTimeout(() => {
+        imgElement.style.opacity = 0;
+        setTimeout(() => {
+            currentSlideIndex = (currentSlideIndex + 1) % activeAds.length;
+            showNextSlide();
+        }, 500);
+    }, displayDuration);
+}
 
-        }, displayDuration);
+// 🌟 ป้องกันการ reset โฆษณาซ้ำซ้อน
+function startScreensaver() {
+    const screensaver = document.getElementById('cfd-screensaver');
+    const imgElement = document.getElementById('screensaver-img');
+    
+    // เพิ่มการเช็ค: ถ้าแสดงอยู่แล้ว ไม่ต้องเริ่มนับ 0 ใหม่
+    if (screensaver && screensaver.classList.contains('hidden') && activeAds.length > 0) {
+        screensaver.classList.remove('hidden');
+        currentSlideIndex = 0;
+        showNextSlide();
     }
-
-    function stopScreensaver() {
-        clearTimeout(slideTimer); // 🌟 สั่งหยุด Timer
-        const screensaver = document.getElementById('cfd-screensaver');
-        if (screensaver) {
-            screensaver.classList.add('hidden');
-        }
-    }
+}
   </script>
 </body>
 </html>
