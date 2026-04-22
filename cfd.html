@@ -170,7 +170,7 @@
 
       // 🌟 ดึงข้อมูลโฆษณาจาก Server มาเก็บไว้
       if (data.adsList) {
-          activeAds = data.adsList.filter(ad => ad.active);
+activeAds = data.adsList.filter(ad => ad.enabled);
       }
 
       // ... (โค้ดดึง Element อื่นๆ ของเดิม) ...
