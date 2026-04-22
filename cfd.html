@@ -346,7 +346,7 @@ function startScreensaver() {
     const screensaver = document.getElementById('cfd-screensaver');
     const imgElement = document.getElementById('screensaver-img');
     
-    // เพิ่มการเช็ค: ถ้าแสดงอยู่แล้ว ไม่ต้องเริ่มนับ 0 ใหม่
+    // 🌟 เพิ่มเงื่อนไข: ถ้ามันแสดงอยู่แล้ว (ไม่ได้ hidden) ก็ไม่ต้องสั่งเริ่มใหม่
     if (screensaver && screensaver.classList.contains('hidden') && activeAds.length > 0) {
         screensaver.classList.remove('hidden');
         currentSlideIndex = 0;
