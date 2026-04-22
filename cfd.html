@@ -24,6 +24,13 @@
 </head>
 <body class="h-screen w-screen flex flex-col">
 
+  <div id="cfd-screensaver" class="fixed inset-0 bg-black z-[200] flex items-center justify-center hidden">
+    <img id="screensaver-img" src="" class="w-full h-full object-contain animate-fade-in transition-opacity duration-1000">
+    <div class="absolute bottom-10 left-0 right-0 text-center">
+        <p class="text-white/80 bg-black/40 inline-block px-6 py-2 rounded-full text-2xl font-bold backdrop-blur-sm animate-pulse">ยินดีต้อนรับสู่ FamePOS</p>
+    </div>
+  </div>
+
   <div class="bg-white shadow-sm p-4 flex justify-between items-center z-10 border-b border-red-100">
     <div class="flex items-center gap-4">
       <img id="cfd-logo" src="https://i.postimg.cc/SxGCt9N2/logo.png" class="h-16 w-auto object-contain rounded-xl">
@@ -144,11 +151,27 @@
     setInterval(fetchCFDState, 1000);
     window.onload = fetchCFDState;
 
-    // ฟังก์ชันวาดหน้าจอ (ใช้ของเดิมที่คุณมีได้เลยครับ)
-function renderCFD(data) {
+    let idleTimeout = null; // ตัวนับเวลาเข้าสู่โหมดพัก
+    let slideInterval = null; // ตัวนับเวลาสลับภาพ
+    let currentSlideIndex = 0;
+    let activeAds = [];
+    
+    // ฟังก์ชันวาดหน้าจอ
+    function renderCFD(data) {
       // 🌟 ใส่โลโก้ร้านตรงๆ ไปเลยที่นี่ ไม่ต้องดึงจาก Database
       document.getElementById('cfd-logo').src = "https://i.postimg.cc/SxGCt9N2/logo.png";
+      
+      // อัปเดตโลโก้ในหน้าชำระเงินสำเร็จด้วย (ถ้ามี)
+      if (document.getElementById('cfd-success-logo')) {
+          document.getElementById('cfd-success-logo').src = "https://i.postimg.cc/SxGCt9N2/logo.png"; 
+      }
+      
       document.getElementById('cfd-shop-name').innerText = data.shopName || "FamePOS";
+
+      // 🌟 ดึงข้อมูลโฆษณาจาก Server มาเก็บไว้
+      if (data.adsList) {
+          activeAds = data.adsList.filter(ad => ad.active);
+      }
 
       // ... (โค้ดดึง Element อื่นๆ ของเดิม) ...
       const idleState = document.getElementById('cfd-idle-state');
@@ -158,13 +181,28 @@ function renderCFD(data) {
       const payQR = document.getElementById('cfd-pay-qr');
       const successScreen = document.getElementById('cfd-success');
 
+      // 🌟 1. กรณีมีการกระทำ (มีของในตะกร้า หรือกำลังจ่ายเงิน)
+      // ซ่อนภาพพักหน้าจอ และรีเซ็ตเวลา
+      if (data.cart && data.cart.length > 0 && data.status !== 'completed') {
+          stopScreensaver();
+          resetIdleTimer(data);
+      }
+
       // 2. จัดการสถานะ (Idle / Success)
       if (data.status === 'completed') {
+        stopScreensaver(); // หยุดโฆษณาเผื่อค้างอยู่
         successScreen.classList.remove('hidden');
-        setTimeout(() => { successScreen.classList.add('hidden'); }, 4000);
+        successScreen.classList.add('flex'); // ให้ Popup แสดงตรงกลาง
+        
+        setTimeout(() => { 
+            successScreen.classList.add('hidden'); 
+            successScreen.classList.remove('flex');
+            resetIdleTimer(data); // 🌟 เริ่มนับถอยหลังเข้าโหมดโฆษณา หลังลูกค้าเดินออกไป
+        }, 4000);
         return;
       } else {
         successScreen.classList.add('hidden');
+        successScreen.classList.remove('flex');
       }
 
       if (!data.cart || data.cart.length === 0 || data.status === 'idle') {
@@ -174,6 +212,9 @@ function renderCFD(data) {
         document.getElementById('cfd-subtotal').innerText = '฿0.00';
         document.getElementById('cfd-net-total').innerText = '฿0.00';
         document.getElementById('cfd-discount-row').classList.add('hidden');
+        
+        // 🌟 ให้แน่ใจว่าเวลานับถอยหลังทำงานเมื่อตะกร้าว่าง
+        resetIdleTimer(data);
         return;
       }
 
@@ -214,7 +255,7 @@ function renderCFD(data) {
         document.getElementById('cfd-discount-row').classList.add('hidden');
       }
 
-// 5. แสดงสถานะการจ่ายเงิน
+      // 5. แสดงสถานะการจ่ายเงิน
       if (data.status === 'paying') {
         paymentArea.classList.remove('hidden');
         if (data.method === 'เงินสด' || data.method.includes('เงินสด')) {
@@ -230,7 +271,7 @@ function renderCFD(data) {
           // 🌟 สร้าง QR Code
           document.getElementById('cfd-qr-img').src = `https://promptpay.io/${data.ppNo}/${data.netTotal.toFixed(2)}.png`;
           
-          // 🌟 ส่วนที่เพิ่มเข้ามา: อัปเดตยอดเงินให้ตรงกับ QR Code
+          // 🌟 อัปเดตยอดเงินให้ตรงกับ QR Code
           if (document.getElementById('cfd-qr-amount')) {
             document.getElementById('cfd-qr-amount').innerText = `฿${data.netTotal.toFixed(2)}`;
           }
@@ -242,6 +283,57 @@ function renderCFD(data) {
       } else {
         paymentArea.classList.add('hidden');
       }
+    }
+
+    // ==========================================
+    // 📺 ฟังก์ชันเสริมสำหรับระบบภาพพักหน้าจอ (Screensaver)
+    // ==========================================
+
+    function resetIdleTimer(data) {
+        clearTimeout(idleTimeout);
+        // เช็คว่าถ้าไม่มีออเดอร์ค้าง ให้เริ่มนับเวลาเข้าโหมดโฆษณา
+        if (!data || !data.cart || data.cart.length === 0 || data.status === 'completed') {
+            // ตั้งเวลาพักจอ (300,000 มิลลิวินาที = 5 นาที) 
+            // *เพื่อการทดสอบ ลองเปลี่ยนเป็น 5000 (5 วินาที) ดูก่อนได้ครับ
+            idleTimeout = setTimeout(() => {
+                startScreensaver();
+            }, 300000); 
+        }
+    }
+
+    function startScreensaver() {
+        const screensaver = document.getElementById('cfd-screensaver');
+        const imgElement = document.getElementById('screensaver-img');
+        
+        if (screensaver && imgElement && activeAds.length > 0) {
+            screensaver.classList.remove('hidden');
+            
+            // แสดงภาพแรกทันที
+            currentSlideIndex = 0;
+            imgElement.src = activeAds[currentSlideIndex].imageUrl;
+
+            // สลับภาพทุกๆ 5 วินาที
+            clearInterval(slideInterval);
+            slideInterval = setInterval(() => {
+                currentSlideIndex = (currentSlideIndex + 1) % activeAds.length;
+                
+                // เอฟเฟกต์เฟด
+                imgElement.style.opacity = 0;
+                setTimeout(() => {
+                    imgElement.src = activeAds[currentSlideIndex].imageUrl;
+                    imgElement.style.opacity = 1;
+                }, 500);
+
+            }, 5000);
+        }
+    }
+
+    function stopScreensaver() {
+        clearInterval(slideInterval);
+        const screensaver = document.getElementById('cfd-screensaver');
+        if (screensaver) {
+            screensaver.classList.add('hidden');
+        }
     }
   </script>
 </body>
