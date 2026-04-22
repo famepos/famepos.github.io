@@ -301,35 +301,53 @@
         }
     }
 
+ // 📺 ฟังก์ชันจัดการสไลด์โชว์แบบ Dynamic (เปลี่ยนเวลาได้อิสระ)
+    let slideTimer = null; // 🌟 ใช้ Timer แบบใหม่
+
     function startScreensaver() {
         const screensaver = document.getElementById('cfd-screensaver');
         const imgElement = document.getElementById('screensaver-img');
         
+        // กรองเอาเฉพาะรูปที่เปิดใช้งาน และเรียงลำดับแล้ว (หลังบ้านส่งมาเรียงแล้ว)
         if (screensaver && imgElement && activeAds.length > 0) {
             screensaver.classList.remove('hidden');
             
-            // แสดงภาพแรกทันที
+            // เริ่มต้นที่ภาพแรก
             currentSlideIndex = 0;
-            imgElement.src = activeAds[currentSlideIndex].imageUrl;
-
-            // สลับภาพทุกๆ 5 วินาที
-            clearInterval(slideInterval);
-            slideInterval = setInterval(() => {
-                currentSlideIndex = (currentSlideIndex + 1) % activeAds.length;
-                
-                // เอฟเฟกต์เฟด
-                imgElement.style.opacity = 0;
-                setTimeout(() => {
-                    imgElement.src = activeAds[currentSlideIndex].imageUrl;
-                    imgElement.style.opacity = 1;
-                }, 500);
-
-            }, 5000);
+            showNextSlide(); // 🌟 เรียกฟังก์ชันโชว์ภาพ
         }
     }
 
+// 🌟 ฟังก์ชันสลับภาพ (ทำงานวนลูปไปเรื่อยๆ)
+    function showNextSlide() {
+        const imgElement = document.getElementById('screensaver-img');
+        if (activeAds.length === 0) return;
+
+        const currentAd = activeAds[currentSlideIndex];
+        const displayDuration = (currentAd.duration || 5) * 1000; // แปลงวินาทีเป็นมิลลิวินาที
+
+        // 1. โชว์รูปปัจจุบัน
+        imgElement.src = currentAd.imageUrl;
+        imgElement.style.opacity = 1;
+
+        // 2. ตั้งเวลารอเปลี่ยนรูปถัดไป ตามที่ตั้งค่ามา
+        clearTimeout(slideTimer);
+        slideTimer = setTimeout(() => {
+            
+            // เฟดรูปเก่าออก
+            imgElement.style.opacity = 0;
+            
+            // รอ 0.5 วิ ให้มันจางหายไป แล้วค่อยเปลี่ยนรูป
+            setTimeout(() => {
+                currentSlideIndex = (currentSlideIndex + 1) % activeAds.length;
+                showNextSlide(); // เรียกตัวเองซ้ำ (วนลูป)
+            }, 500);
+
+        }, displayDuration);
+    }
+
     function stopScreensaver() {
-        clearInterval(slideInterval);
+        clearTimeout(slideTimer); // 🌟 สั่งหยุด Timer
         const screensaver = document.getElementById('cfd-screensaver');
         if (screensaver) {
             screensaver.classList.add('hidden');
