@@ -126,6 +126,7 @@
   </div>
 
   <script>
+    
     // ⏰ 1. อัปเดตนาฬิกา
     setInterval(() => {
       document.getElementById('cfd-clock').innerText = new Date().toLocaleTimeString('th-TH');
@@ -134,17 +135,24 @@
     // 🌟 2. เชื่อมต่อข้อมูลกับ Google Script
     const GAS_URL = "https://script.google.com/macros/s/AKfycbxqmIYIYrhEeAMvxFlDY3K4c0iRSXaUxFNrn-TUmouG-nRnmGyvDPocbsK4MGDVz_ZEBQ/exec";
 
-    async function fetchCFDState() {
-      try {
-        const timestamp = new Date().getTime();
-        const fetchUrl = `${GAS_URL}?api=getCFD&t=${timestamp}`;
-        const response = await fetch(fetchUrl, { cache: 'no-store' });
-        const data = await response.json();
-        if (data) renderCFD(data);
-      } catch (error) {
-        console.error("Connection Error...", error);
-      }
+async function fetchCFDState() {
+  try {
+    const timestamp = new Date().getTime();
+    const fetchUrl = `${GAS_URL}?api=getCFD&t=${timestamp}`;
+    const response = await fetch(fetchUrl, { cache: 'no-store' });
+    const data = await response.json();
+    
+    // 🌟 แปลงข้อมูลเป็นข้อความเพื่อเช็คว่าเหมือนเดิมไหม
+    const currentDataJson = JSON.stringify(data);
+    
+    if (data && currentDataJson !== lastDataJson) {
+        lastDataJson = currentDataJson; // จำค่าใหม่
+        renderCFD(data); // 🚀 วาดหน้าจอเฉพาะตอนที่มีการเปลี่ยนแปลงเท่านั้น
     }
+  } catch (error) {
+    console.error("Connection Error...", error);
+  }
+}
 
     // เริ่มทำงานเมื่อโหลดหน้า
     setInterval(fetchCFDState, 1000);
@@ -154,6 +162,7 @@
     let slideTimer = null;
     let currentSlideIndex = 0;
     let activeAds = [];
+    let lastDataJson = ""; // 🌟 ตัวแปรสำหรับจำข้อมูลล่าสุด
 
     // 🎨 3. ฟังก์ชันวาดหน้าจอหลัก
     function renderCFD(data) {
