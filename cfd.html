@@ -142,15 +142,15 @@ async function fetchCFDState() {
     const response = await fetch(fetchUrl, { cache: 'no-store' });
     const data = await response.json();
     
-    // 🌟 แปลงข้อมูลเป็นข้อความเพื่อเช็คว่าเหมือนเดิมไหม
+    // 🌟 ตรวจสอบว่าข้อมูลเปลี่ยนไปจากเดิมหรือไม่
     const currentDataJson = JSON.stringify(data);
     
     if (data && currentDataJson !== lastDataJson) {
-        lastDataJson = currentDataJson; // จำค่าใหม่
-        renderCFD(data); // 🚀 วาดหน้าจอเฉพาะตอนที่มีการเปลี่ยนแปลงเท่านั้น
+        lastDataJson = currentDataJson; // จำข้อมูลใหม่
+        renderCFD(data); // 🚀 วาดหน้าจอใหม่เฉพาะตอนข้อมูลเปลี่ยนเท่านั้น
     }
   } catch (error) {
-    console.error("Connection Error...", error);
+    console.error("กำลังเชื่อมต่อข้อมูล...", error);
   }
 }
 
