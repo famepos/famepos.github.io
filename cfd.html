@@ -5,10 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <link rel="icon" type="image/png" href="https://i.postimg.cc/9MzT6RTZ/20-(5).png">
   <link rel="apple-touch-icon" href="https://i.postimg.cc/9MzT6RTZ/20-(5).png">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="FamePOS">
   <title>Customer Display - FamePOS</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
@@ -30,7 +26,7 @@
   <div id="full-payment-overlay" class="fixed inset-0 bg-white z-[150] flex flex-col items-center justify-center p-6 hidden animate-fade-in overflow-y-auto">
       
       <div class="bg-gray-50 p-5 rounded-3xl border border-gray-200 shadow-sm w-full max-w-sm mb-6 flex-shrink-0">
-          <div class="flex justify-between text-gray-500 font-bold mb-2 text-sm"><span>ยอดรวม:</span><span id="full-subtotal">฿0.00</span></div>
+          <div class="flex justify-between text-gray-500 font-bold mb-2 text-sm"><span>ยอดรวมสินค้า:</span><span id="full-subtotal">฿0.00</span></div>
           <div id="full-discount-row" class="flex justify-between text-red-500 font-bold mb-2 text-sm hidden"><span>ส่วนลด:</span><span id="full-discount">-฿0.00</span></div>
           <div id="full-sc-row" class="flex justify-between text-orange-500 font-bold mb-2 text-sm hidden"><span id="full-sc-label">SC:</span><span id="full-sc-amount">฿0.00</span></div>
           <div id="full-vat-row" class="flex justify-between text-blue-500 font-bold mb-2 text-sm hidden"><span id="full-vat-label">VAT:</span><span id="full-vat-amount">฿0.00</span></div>
@@ -164,11 +160,11 @@
               fullCash.classList.remove('hidden');
               fullCash.innerHTML = `<div class="text-8xl mb-4">🛵</div><h2 class="text-3xl font-bold text-orange-500 mb-2">${data.tableNo || 'เดลิเวอรี่'}</h2><p class="text-lg text-gray-400">ออเดอร์จัดส่ง</p>`;
           } 
-          // กรณี: สแกนจ่าย / คนละครึ่ง / โอน
+          // กรณี: สแกนจ่าย / คนละครึ่ง / แยกชำระ
           else if (data.method.includes('สแกนจ่าย') || data.method === 'คนละครึ่ง' || data.method.includes('+')) {
               fullCash.classList.add('hidden');
               fullQR.classList.remove('hidden');
-              const qrAmount = data.remaining || data.netTotal;
+              const qrAmount = data.remaining || data.netTotal; // ดึงยอดที่หารหรือหักแล้วมาใช้
               document.getElementById('full-qr-amount').innerText = qrAmount.toFixed(2);
               if (data.ppNo) document.getElementById('full-qr-img').src = `https://promptpay.io/${data.ppNo}/${qrAmount.toFixed(2)}.png`;
           } 
@@ -212,7 +208,6 @@
       }
     }
 
-    // 📺 ระบบพักหน้าจอ
     function handleScreensaverLogic(data) {
         const screensaver = document.getElementById('cfd-screensaver');
         const isAdShowing = screensaver && !screensaver.classList.contains('hidden');
