@@ -19,6 +19,14 @@
 </head>
 <body class="h-screen w-screen flex flex-col overflow-hidden bg-gray-50">
 
+  <div id="queue-popup" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[400] flex flex-col items-center justify-center hidden transition-opacity duration-300">
+      <div class="bg-white p-12 rounded-[3rem] shadow-2xl flex flex-col items-center text-center animate-bounce border-[12px] border-red-500 min-w-[80%] md:min-w-[400px]">
+          <div class="text-7xl mb-4">📢</div>
+          <h2 class="text-3xl md:text-5xl font-bold text-gray-700 mb-4">ขอเชิญคิวที่</h2>
+          <div class="text-8xl md:text-[9rem] font-black text-red-600 leading-none" id="queue-popup-number">000</div>
+      </div>
+  </div>
+
   <div id="cfd-screensaver" class="fixed inset-0 bg-black z-[200] flex items-center justify-center hidden">
     <img id="screensaver-img" src="" class="w-full h-full object-contain transition-opacity duration-1000 opacity-0">
   </div>
@@ -89,6 +97,8 @@
   </div>
 
   <script>
+    let lastCalledQueue = ""; // ตัวแปรกันระบบพูดซ้ำ
+    
     setInterval(() => { document.getElementById('cfd-clock').innerText = new Date().toLocaleTimeString('th-TH'); }, 1000);
     const GAS_URL = "https://script.google.com/macros/s/AKfycbxqmIYIYrhEeAMvxFlDY3K4c0iRSXaUxFNrn-TUmouG-nRnmGyvDPocbsK4MGDVz_ZEBQ/exec";
     let lastDataJson = ""; let idleTimeout = null; let slideTimer = null; let currentSlideIndex = 0; let activeAds = [];
@@ -112,6 +122,12 @@ function renderCFD(data) {
   const fullPayment = document.getElementById('full-payment-overlay');
   const successScreen = document.getElementById('cfd-success');
 
+  // เช็คว่าแคชเชียร์กดเรียกคิวมาใหม่หรือไม่
+  if (data.callQueue && data.callQueue !== lastCalledQueue) {
+      lastCalledQueue = data.callQueue;
+      announceQueue(data.callQueue);
+  }
+  
   // 🖼️ ตั้งค่าโฆษณา
   if (data.adsList) activeAds = data.adsList.filter(ad => ad.enabled === true || ad.enabled === "TRUE");
   document.getElementById('cfd-shop-name').innerText = data.shopName || "FamePOS";
@@ -247,6 +263,28 @@ function renderCFD(data) {
         slideTimer = setTimeout(() => { img.style.opacity = 0; setTimeout(() => { currentSlideIndex = (currentSlideIndex + 1) % activeAds.length; showNextSlide(); }, 500); }, (ad.duration || 5) * 1000);
     }
     function stopScreensaver() { clearTimeout(slideTimer); const ss = document.getElementById('cfd-screensaver'); if (ss) ss.classList.add('hidden'); }
+
+    function announceQueue(queueNo) {
+    const popup = document.getElementById('queue-popup');
+    document.getElementById('queue-popup-number').innerText = queueNo;
+    
+    // 1. โชว์หน้าต่างป๊อปอัพ
+    popup.classList.remove('hidden');
+
+    // 2. สั่งเบราว์เซอร์ให้พูด (ภาษาไทย)
+    if ('speechSynthesis' in window) {
+        const msg = new SpeechSynthesisUtterance(`ขอเชิญคิวที่ ${queueNo} ค่ะ`);
+        msg.lang = 'th-TH';
+        msg.rate = 0.85; // ปรับความเร็ว (0.85 จะฟังสบาย ไม่เร็วไป)
+        window.speechSynthesis.speak(msg);
+    }
+
+    // 3. ซ่อนป๊อปอัพอัตโนมัติหลังผ่านไป 5 วินาที
+    setTimeout(() => {
+        popup.classList.add('hidden');
+    }, 5000);
+}
+    
   </script>
 </body>
 </html>
