@@ -264,26 +264,44 @@ function renderCFD(data) {
     }
     function stopScreensaver() { clearTimeout(slideTimer); const ss = document.getElementById('cfd-screensaver'); if (ss) ss.classList.add('hidden'); }
 
-    function announceQueue(queueNo) {
+function announceQueue(queueNo) {
     const popup = document.getElementById('queue-popup');
     document.getElementById('queue-popup-number').innerText = queueNo;
     
-    // 1. โชว์หน้าต่างป๊อปอัพ
     popup.classList.remove('hidden');
 
-    // 2. สั่งเบราว์เซอร์ให้พูด (ภาษาไทย)
     if ('speechSynthesis' in window) {
         const msg = new SpeechSynthesisUtterance(`ขอเชิญคิวที่ ${queueNo} ค่ะ`);
+        
+        // 🌟 ส่วนการเลือกเสียง
+        const voices = window.speechSynthesis.getVoices();
+        
+        // ลองหาเสียง "Google ภาษาไทย" ก่อน เพราะเพราะที่สุด
+        let selectedVoice = voices.find(v => v.name.includes('Google') && v.lang === 'th-TH');
+        
+        // ถ้าไม่เจอ Google ให้เอาเสียงภาษาไทยอะไรก็ได้ที่มีในเครื่อง
+        if (!selectedVoice) {
+            selectedVoice = voices.find(v => v.lang === 'th-TH');
+        }
+
+        if (selectedVoice) {
+            msg.voice = selectedVoice;
+        }
+
         msg.lang = 'th-TH';
-        msg.rate = 0.85; // ปรับความเร็ว (0.85 จะฟังสบาย ไม่เร็วไป)
+        msg.rate = 0.9;  // ความเร็ว (0.1 - 10)
+        msg.pitch = 1.0; // ระดับเสียงสูง-ต่ำ (0 - 2)
+        
         window.speechSynthesis.speak(msg);
     }
 
-    // 3. ซ่อนป๊อปอัพอัตโนมัติหลังผ่านไป 5 วินาที
-    setTimeout(() => {
-        popup.classList.add('hidden');
-    }, 5000);
+    setTimeout(() => { popup.classList.add('hidden'); }, 5000);
 }
+
+// 🌟 สำคัญ: ต้องโหลดเสียงเตรียมไว้ก่อน (บางเบราว์เซอร์โหลดช้า)
+window.speechSynthesis.onvoiceschanged = () => {
+    window.speechSynthesis.getVoices();
+};
     
   </script>
 </body>
