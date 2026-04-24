@@ -109,19 +109,23 @@
     const GAS_URL = "https://script.google.com/macros/s/AKfycbxqmIYIYrhEeAMvxFlDY3K4c0iRSXaUxFNrn-TUmouG-nRnmGyvDPocbsK4MGDVz_ZEBQ/exec";
     let lastDataJson = ""; let idleTimeout = null; let slideTimer = null; let currentSlideIndex = 0; let activeAds = [];
 
-    async function fetchCFDState() {
-      try {
-        const timestamp = new Date().getTime();
-        const response = await fetch(`${GAS_URL}?api=getCFD&t=${timestamp}`, { cache: 'no-store' });
-        const data = await response.json();
-        if (data) {
-            handleScreensaverLogic(data);
-            const currentDataJson = JSON.stringify(data);
-            if (currentDataJson !== lastDataJson) { lastDataJson = currentDataJson; renderCFD(data); }
-        }
-      } catch (error) { console.error("Error", error); }
-    }
-    setInterval(fetchCFDState, 1000); window.onload = fetchCFDState;
+  function triggerQueueCall(queueNo) {
+    queueToCall = queueNo; // 1. กำหนดเลขคิวที่ต้องการเรียก
+    syncCFD();             // 2. ส่งข้อมูลไปที่หน้าจอ CFD ทันที
+
+    Swal.fire({ 
+        toast: true, position: 'top', icon: 'success', 
+        title: "📢 กำลังเรียกคิวที่ " + queueNo + "...", 
+        showConfirmButton: false, timer: 1500 
+    });
+
+    // 🌟 3. หลังจากผ่านไป 3 วินาที ให้สั่งล้างเลขคิวทิ้งที่ฝั่ง POS
+    // เพื่อให้หน้าจอ CFD "ลืม" และพร้อมรับเลขเดิมซ้ำอีกครั้ง
+    setTimeout(function() { 
+        queueToCall = ""; 
+        syncCFD(); 
+    }, 3000);
+}
 
 function renderCFD(data) {
   const standardLayout = document.getElementById('standard-layout');
