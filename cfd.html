@@ -253,7 +253,7 @@
         if (!isAdShowing && !idleTimeout) {
             idleTimeout = setTimeout(() => {
                 startScreensaver();
-            }, 5000); 
+            }, 800); 
         }
     }
 
@@ -280,7 +280,7 @@
                 currentSlideIndex = (currentSlideIndex + 1) % activeAds.length;
                 showNextSlide();
             }, 500);
-        }, (currentAd.duration || 5) * 800);
+        }, (currentAd.duration || 5) * 1000);
     }
 
     function stopScreensaver() {
