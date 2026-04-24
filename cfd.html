@@ -16,287 +16,185 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap');
-    body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; overflow: hidden; }
+    body { font-family: 'Sarabun', sans-serif; background-color: #ffffff; overflow: hidden; }
     
     .animate-fade-in { animation: fadeIn 0.3s ease-out; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
 
     .custom-scrollbar::-webkit-scrollbar { width: 4px; }
     .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #fee2e2; border-radius: 10px; }
   </style>
 </head>
-<body class="h-screen w-screen flex flex-col overflow-hidden bg-white">
+<body class="h-screen w-screen flex flex-col overflow-hidden">
 
   <div id="cfd-screensaver" class="fixed inset-0 bg-black z-[200] flex items-center justify-center hidden">
     <img id="screensaver-img" src="" class="w-full h-full object-contain transition-opacity duration-1000 opacity-0">
-    <div class="absolute bottom-6 left-0 right-0 text-center px-4">
-        <p class="text-white/80 bg-black/40 inline-block px-6 py-2 rounded-full text-lg font-bold backdrop-blur-md animate-pulse border border-white/10">ยินดีต้อนรับสู่ FamePOS</p>
-    </div>
   </div>
 
-  <header class="flex-shrink-0 bg-white shadow-sm p-3 md:p-4 flex justify-between items-center z-10 border-b border-red-100">
-    <div class="flex items-center gap-3 md:gap-4">
-      <img id="cfd-logo" src="https://i.postimg.cc/SxGCt9N2/logo.png" class="h-8 md:h-14 w-auto object-contain rounded-lg">
-      <h1 id="cfd-shop-name" class="text-lg md:text-2xl font-bold text-gray-800 tracking-tight">FamePOS</h1>
-    </div>
-    <div class="bg-gray-50 px-3 py-1 md:px-4 md:py-2 rounded-xl border border-gray-100">
-        <div class="text-red-500 font-bold text-base md:text-xl font-mono" id="cfd-clock">00:00:00</div>
-    </div>
-  </header>
-
-  <main class="flex-1 flex flex-col lg:flex-row overflow-hidden">
-    
-    <section class="flex-1 flex flex-col bg-white overflow-hidden border-b lg:border-b-0 lg:border-r border-gray-100">
-      <div class="p-4 md:p-6 border-b border-gray-50 flex-shrink-0">
-        <h2 class="text-lg md:text-xl font-bold text-red-600 flex items-center gap-2">🛒 รายการสินค้า</h2>
+  <div id="full-payment-overlay" class="fixed inset-0 bg-white z-[150] flex flex-col items-center justify-center p-6 hidden animate-fade-in">
+      <div id="full-pay-qr" class="w-full flex flex-col items-center hidden">
+          <h2 class="text-2xl font-bold text-gray-500 mb-2">สแกนชำระเงิน</h2>
+          <div class="text-6xl font-black text-red-600 mb-8 leading-none">฿<span id="full-qr-amount">0.00</span></div>
+          <div class="bg-white p-4 rounded-[2.5rem] border-[12px] border-red-50 shadow-2xl">
+              <img id="full-qr-img" src="" class="w-72 h-72 md:w-96 md:h-96 object-contain">
+          </div>
+          <p class="text-gray-400 mt-8 font-bold animate-pulse text-lg">ขอบคุณที่ใช้บริการครับ/ค่ะ</p>
       </div>
-      
-      <div id="cfd-cart-items" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-3 custom-scrollbar hidden">
-        </div>
 
-      <div id="cfd-idle-state" class="flex-1 flex flex-col items-center justify-center opacity-40">
-        <div class="text-6xl md:text-8xl mb-4">🛍️</div>
-        <h2 class="text-xl md:text-2xl font-bold text-gray-400">ยินดีต้อนรับ</h2>
+      <div id="full-pay-cash" class="w-full flex flex-col items-center hidden">
+          <div class="text-8xl mb-6">💵</div>
+          <h2 class="text-3xl font-bold text-gray-700 mb-10">ชำระเงินสด</h2>
+          <div class="w-full max-w-sm space-y-6">
+              <div class="flex justify-between items-center text-2xl text-gray-400 font-bold uppercase">
+                  <span>รับเงินมา</span><span class="text-gray-800" id="full-received">฿0.00</span>
+              </div>
+              <div class="bg-green-500 text-white p-8 rounded-[2rem] shadow-xl text-center">
+                  <p class="text-sm font-bold uppercase tracking-widest mb-2 opacity-80">เงินทอนที่ได้รับ</p>
+                  <p class="text-7xl font-black leading-none" id="full-change">฿0.00</p>
+              </div>
+          </div>
       </div>
-    </section>
+  </div>
 
-    <aside class="w-full lg:w-[400px] flex-shrink-0 bg-gray-50 flex flex-col shadow-inner overflow-y-auto lg:overflow-hidden">
-      
-      <div class="p-4 md:p-6 space-y-4">
-        <div class="bg-white p-5 rounded-2xl shadow-sm border border-red-100">
-          <div class="flex justify-between text-gray-400 mb-1 text-sm font-bold uppercase">
-            <span>ยอดรวม</span><span id="cfd-subtotal">฿0.00</span>
-          </div>
-          <div id="cfd-discount-row" class="flex justify-between text-red-400 mb-3 text-sm font-bold hidden">
-            <span>ส่วนลด</span><span id="cfd-discount">-฿0.00</span>
-          </div>
-          <div class="border-t-2 border-dashed border-gray-100 pt-4 mt-2">
-            <p class="text-[10px] text-gray-400 font-extrabold mb-1 uppercase tracking-widest">ยอดชำระสุทธิ</p>
-            <span class="text-5xl md:text-6xl font-black text-red-600 block leading-none" id="cfd-net-total">฿0.00</span>
-          </div>
+  <div id="standard-layout" class="h-full flex flex-col">
+      <header class="flex-shrink-0 bg-white p-4 flex justify-between items-center border-b border-red-100">
+        <div class="flex items-center gap-3">
+          <img id="cfd-logo" src="https://i.postimg.cc/SxGCt9N2/logo.png" class="h-10 w-auto object-contain">
+          <h1 id="cfd-shop-name" class="text-xl font-bold text-gray-800">FamePOS</h1>
         </div>
+        <div class="text-red-500 font-bold text-xl font-mono" id="cfd-clock">00:00:00</div>
+      </header>
 
-        <div id="cfd-payment-area" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col items-center justify-center hidden animate-fade-in min-h-[300px]">
-          
-          <div id="cfd-pay-cash" class="w-full text-center hidden">
-            <div class="text-5xl mb-4">💵</div>
-            <h3 class="text-xl font-bold text-gray-700 mb-6 uppercase tracking-tight">ชำระเงินสด</h3>
-            <div class="space-y-2">
-              <div class="flex justify-between items-center text-sm"><span class="text-gray-400">รับมา</span><span class="font-bold text-gray-800 text-lg" id="cfd-received">฿0.00</span></div>
-              <div class="flex justify-between items-center p-3 bg-green-50 rounded-xl border border-green-100"><span class="text-green-600 font-bold">เงินทอน</span><span class="text-3xl font-black text-green-600" id="cfd-change">฿0.00</span></div>
+      <main class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+        <section class="flex-1 flex flex-col bg-white overflow-hidden lg:border-r border-gray-100">
+          <div class="p-4 border-b border-gray-50"><h2 class="font-bold text-red-600">🛒 รายการสินค้าของคุณ</h2></div>
+          <div id="cfd-cart-items" class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar hidden"></div>
+          <div id="cfd-idle-state" class="flex-1 flex flex-col items-center justify-center opacity-30"><div class="text-6xl mb-4">🛍️</div><h2 class="text-xl font-bold">ยินดีต้อนรับ</h2></div>
+        </section>
+
+        <aside class="w-full lg:w-[350px] bg-gray-50 p-4 border-t lg:border-t-0 shadow-inner">
+            <div class="bg-white p-4 rounded-2xl border border-red-100">
+              <div class="flex justify-between text-gray-400 text-sm font-bold uppercase"><span>ยอดรวม</span><span id="cfd-subtotal">฿0.00</span></div>
+              <div id="cfd-discount-row" class="flex justify-between text-red-400 text-sm font-bold hidden"><span>ส่วนลด</span><span id="cfd-discount">-฿0.00</span></div>
+              <div class="border-t-2 border-dashed border-gray-100 pt-3 mt-2">
+                <p class="text-[10px] text-gray-400 font-black uppercase mb-1">ยอดสุทธิ</p>
+                <span class="text-5xl font-black text-red-600 leading-none" id="cfd-net-total">฿0.00</span>
+              </div>
             </div>
-          </div>
-
-          <div id="cfd-pay-qr" class="w-full text-center hidden">
-            <div class="bg-red-600 text-white px-6 py-2 rounded-full mb-4 inline-block font-black text-xl shadow-md">฿<span id="cfd-qr-amount">0.00</span></div>
-            <div class="bg-white p-3 rounded-2xl border-4 border-red-50 shadow-lg mx-auto w-fit">
-              <img id="cfd-qr-img" src="" class="w-48 h-48 md:w-56 md:h-56 object-contain">
-            </div>
-            <p class="text-gray-400 mt-4 text-sm font-bold">กรุณาสแกนเพื่อชำระเงิน</p>
-          </div>
-        </div>
-      </div>
-    </aside>
-  </main>
+        </aside>
+      </main>
+  </div>
 
   <div id="cfd-success" class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center hidden animate-fade-in z-[300]">
-    <div class="bg-white p-10 rounded-[2.5rem] shadow-2xl flex flex-col items-center border-[10px] border-green-400 max-w-[90%] w-96 text-center">
+    <div class="bg-white p-10 rounded-[2.5rem] shadow-2xl flex flex-col items-center border-[10px] border-green-400 max-w-[90%] text-center">
       <div class="text-7xl mb-4">✅</div>
-      <h2 class="text-3xl font-black text-green-600 mb-2">เรียบร้อย!</h2>
-      <p class="text-lg text-gray-400">ขอบคุณที่ใช้บริการครับ/ค่ะ</p>
+      <h2 class="text-3xl font-black text-green-600">ชำระเงินเรียบร้อย</h2>
+      <p class="text-lg text-gray-400 mt-2">ขอบคุณที่ใช้บริการค่ะ/ครับ</p>
     </div>
   </div>
 
   <script>
-    // ⏰ 1. อัปเดตนาฬิกา
-    setInterval(() => {
-      document.getElementById('cfd-clock').innerText = new Date().toLocaleTimeString('th-TH');
-    }, 1000);
-
+    /* 🌟 JavaScript ชุดแก้ไขสำหรับการสลับโหมดเต็มหน้าจอ 🌟 */
+    setInterval(() => { document.getElementById('cfd-clock').innerText = new Date().toLocaleTimeString('th-TH'); }, 1000);
     const GAS_URL = "https://script.google.com/macros/s/AKfycbxqmIYIYrhEeAMvxFlDY3K4c0iRSXaUxFNrn-TUmouG-nRnmGyvDPocbsK4MGDVz_ZEBQ/exec";
+    let lastDataJson = ""; let idleTimeout = null; let slideTimer = null; let currentSlideIndex = 0; let activeAds = [];
 
-    let lastDataJson = ""; 
-    let idleTimeout = null; 
-    let slideTimer = null;
-    let currentSlideIndex = 0;
-    let activeAds = [];
-
-    // 🌟 2. ฟังก์ชันดึงข้อมูล (เพิ่มตรรกะเรียกภาพพักหน้าจอที่ถูกต้อง)
     async function fetchCFDState() {
       try {
         const timestamp = new Date().getTime();
-        const fetchUrl = `${GAS_URL}?api=getCFD&t=${timestamp}`;
-        const response = await fetch(fetchUrl, { cache: 'no-store' });
+        const response = await fetch(`${GAS_URL}?api=getCFD&t=${timestamp}`, { cache: 'no-store' });
         const data = await response.json();
-        
         if (data) {
-            // 🖼️ อัปเดตรายการโฆษณาล่าสุดไว้เสมอ
-            if (data.adsList) {
-                activeAds = data.adsList.filter(ad => ad.enabled === true || ad.enabled === "TRUE");
-            }
-
-            // 📺 1. จัดการเรื่องภาพพักหน้าจอ (ตรวจสอบทุกวินาที)
             handleScreensaverLogic(data);
-
-            // 🛒 2. วาดหน้าจอใหม่เฉพาะตอนข้อมูลเปลี่ยนจริง (กันจอกระพริบ)
             const currentDataJson = JSON.stringify(data);
-            if (currentDataJson !== lastDataJson) {
-                lastDataJson = currentDataJson;
-                renderCFD(data);
-            }
+            if (currentDataJson !== lastDataJson) { lastDataJson = currentDataJson; renderCFD(data); }
         }
-      } catch (error) {
-        console.error("Connection Error...", error);
-      }
+      } catch (error) { console.error("Error", error); }
     }
+    setInterval(fetchCFDState, 1000); window.onload = fetchCFDState;
 
-    setInterval(fetchCFDState, 1000);
-    window.onload = fetchCFDState;
-
-    // 🎨 3. ฟังก์ชันวาดรายการสินค้าและยอดเงิน
     function renderCFD(data) {
-      document.getElementById('cfd-logo').src = "https://i.postimg.cc/SxGCt9N2/logo.png";
-      document.getElementById('cfd-shop-name').innerText = data.shopName || "FamePOS";
-
-      const idleState = document.getElementById('cfd-idle-state');
-      const cartItems = document.getElementById('cfd-cart-items');
-      const paymentArea = document.getElementById('cfd-payment-area');
+      const standardLayout = document.getElementById('standard-layout');
+      const fullPayment = document.getElementById('full-payment-overlay');
       const successScreen = document.getElementById('cfd-success');
 
-      // หน้าจอชำระเงินสำเร็จ
+      // 🖼️ ตั้งค่าโฆษณา
+      if (data.adsList) activeAds = data.adsList.filter(ad => ad.enabled === true || ad.enabled === "TRUE");
+
+      // 1. จัดการหน้าจอความสำเร็จ
       if (data.status === 'completed') {
         successScreen.classList.remove('hidden');
-        successScreen.classList.add('flex');
-        setTimeout(() => { 
-            successScreen.classList.add('hidden'); 
-            successScreen.classList.remove('flex');
-        }, 4000);
+        fullPayment.classList.add('hidden');
+        setTimeout(() => { successScreen.classList.add('hidden'); }, 4000);
         return;
-      }
+      } else { successScreen.classList.add('hidden'); }
 
-      // หน้าจอว่าง/ตะกร้าว่าง
-      if (!data.cart || data.cart.length === 0) {
-        idleState.classList.remove('hidden');
-        cartItems.classList.add('hidden');
-        paymentArea.classList.add('hidden');
-        document.getElementById('cfd-subtotal').innerText = '฿0.00';
-        document.getElementById('cfd-net-total').innerText = '฿0.00';
-        document.getElementById('cfd-discount-row').classList.add('hidden');
-        return;
-      }
-
-      // วาดรายการสินค้า
-      idleState.classList.add('hidden');
-      cartItems.classList.remove('hidden');
-      cartItems.innerHTML = data.cart.map(item => {
-        let optionsHtml = item.options && Object.values(item.options).length > 0 && Object.values(item.options)[0] !== "" 
-            ? `<div class="text-[10px] md:text-sm text-gray-400 italic">${Object.values(item.options).join(', ')}</div>` : '';
-        return `
-        <div class="flex justify-between items-center bg-gray-50 p-3 md:p-5 rounded-2xl md:rounded-3xl border border-gray-100 shadow-sm animate-fade-in">
-          <div class="flex items-center gap-3 md:gap-5">
-            <div class="bg-red-600 text-white font-black w-8 h-8 md:w-12 md:h-12 rounded-full flex items-center justify-center text-sm md:text-xl">${item.qty}</div>
-            <div>
-              <div class="text-base md:text-2xl font-bold text-gray-800">${item.name}</div>
-              ${optionsHtml}
-            </div>
-          </div>
-          <div class="text-base md:text-2xl font-black text-red-600">฿${(item.price * item.qty).toFixed(2)}</div>
-        </div>`;
-      }).join('');
-      cartItems.scrollTop = cartItems.scrollHeight;
-
-      // แสดงยอดเงิน
-      document.getElementById('cfd-subtotal').innerText = `฿${data.grandTotal.toFixed(2)}`;
-      document.getElementById('cfd-net-total').innerText = `฿${data.netTotal.toFixed(2)}`;
-      if (data.discount > 0) {
-          document.getElementById('cfd-discount-row').classList.remove('hidden');
-          document.getElementById('cfd-discount').innerText = `-฿${data.discount.toFixed(2)}`;
-      } else {
-          document.getElementById('cfd-discount-row').classList.add('hidden');
-      }
-
-      // แสดง QR หรือ ข้อมูลเงินทอน
+      // 2. 🌟 จัดการโหมดชำระเงินเต็มหน้าจอ (status === 'paying')
       if (data.status === 'paying') {
-        paymentArea.classList.remove('hidden');
-        const payCash = document.getElementById('cfd-pay-cash');
-        const payQR = document.getElementById('cfd-pay-qr');
-        if (data.method.includes('เงินสด')) {
-          payCash.classList.remove('hidden'); payQR.classList.add('hidden');
-          document.getElementById('cfd-received').innerText = `฿${data.received.toFixed(2)}`;
-          document.getElementById('cfd-change').innerText = `฿${data.change.toFixed(2)}`;
-        } else {
-          payCash.classList.add('hidden'); payQR.classList.remove('hidden');
-          if (data.ppNo) {
-            document.getElementById('cfd-qr-img').src = `https://promptpay.io/${data.ppNo}/${data.netTotal.toFixed(2)}.png`;
-            document.getElementById('cfd-qr-amount').innerText = data.netTotal.toFixed(2);
+          standardLayout.classList.add('hidden');
+          fullPayment.classList.remove('hidden');
+          
+          const fullCash = document.getElementById('full-pay-cash');
+          const fullQR = document.getElementById('full-pay-qr');
+
+          if (data.method.includes('เงินสด')) {
+              fullQR.classList.add('hidden');
+              fullCash.classList.remove('hidden');
+              document.getElementById('full-received').innerText = `฿${data.received.toFixed(2)}`;
+              document.getElementById('full-change').innerText = `฿${data.change.toFixed(2)}`;
+          } else {
+              fullCash.classList.add('hidden');
+              fullQR.classList.remove('hidden');
+              document.getElementById('full-qr-amount').innerText = data.netTotal.toFixed(2);
+              if (data.ppNo) document.getElementById('full-qr-img').src = `https://promptpay.io/${data.ppNo}/${data.netTotal.toFixed(2)}.png`;
           }
-        }
+          return; // จบการทำงานในโหมดจ่ายเงิน
       } else {
-        paymentArea.classList.add('hidden');
+          // โหมดปกติ: โชว์รายการสินค้า
+          fullPayment.classList.add('hidden');
+          standardLayout.classList.remove('hidden');
+      }
+
+      // 3. วาดรายการสินค้าในโหมดปกติ
+      const idleState = document.getElementById('cfd-idle-state');
+      const cartItems = document.getElementById('cfd-cart-items');
+      if (!data.cart || data.cart.length === 0) {
+          idleState.classList.remove('hidden'); cartItems.classList.add('hidden');
+          document.getElementById('cfd-subtotal').innerText = '฿0.00'; document.getElementById('cfd-net-total').innerText = '฿0.00';
+          document.getElementById('cfd-discount-row').classList.add('hidden');
+      } else {
+          idleState.classList.add('hidden'); cartItems.classList.remove('hidden');
+          cartItems.innerHTML = data.cart.map(item => {
+            let opts = item.options ? `<div class="text-[10px] text-gray-400 italic">${Object.values(item.options).join(', ')}</div>` : '';
+            return `<div class="flex justify-between items-center bg-gray-50 p-4 rounded-2xl mb-2"><div class="flex items-center gap-3"><div class="bg-red-600 text-white font-black w-8 h-8 rounded-full flex items-center justify-center text-sm">${item.qty}</div><div><div class="font-bold text-gray-800">${item.name}</div>${opts}</div></div><div class="font-black text-red-600">฿${(item.price * item.qty).toFixed(2)}</div></div>`;
+          }).join('');
+          document.getElementById('cfd-subtotal').innerText = `฿${data.grandTotal.toFixed(2)}`;
+          document.getElementById('cfd-net-total').innerText = `฿${data.netTotal.toFixed(2)}`;
+          if (data.discount > 0) {
+              document.getElementById('cfd-discount-row').classList.remove('hidden');
+              document.getElementById('cfd-discount').innerText = `-฿${data.discount.toFixed(2)}`;
+          } else { document.getElementById('cfd-discount-row').classList.add('hidden'); }
       }
     }
 
-    // 📺 4. ฟังก์ชันจัดการตรรกะภาพพักหน้าจอ (เวอร์ชันเสถียร)
+    // 📺 ระบบพักหน้าจอ
     function handleScreensaverLogic(data) {
         const screensaver = document.getElementById('cfd-screensaver');
         const isAdShowing = screensaver && !screensaver.classList.contains('hidden');
-        const isSuccessShowing = !document.getElementById('cfd-success').classList.contains('hidden');
-
-        // 🛑 ถ้ามีสินค้าในตะกร้า หรือกำลังโชว์หน้า Success -> ปิดโฆษณาทันที
-        if ((data.cart && data.cart.length > 0) || isSuccessShowing) {
-            if (isAdShowing) stopScreensaver();
-            if (idleTimeout) {
-                clearTimeout(idleTimeout);
-                idleTimeout = null;
-            }
-            return;
+        if ((data.cart && data.cart.length > 0) || data.status === 'paying' || !document.getElementById('cfd-success').classList.contains('hidden')) {
+            stopScreensaver(); if (idleTimeout) { clearTimeout(idleTimeout); idleTimeout = null; } return;
         }
-
-        // ⏳ ถ้าเครื่องว่าง และยังไม่ได้เปิดโฆษณา และไม่มีคิว Timer ค้างอยู่ -> เริ่มนับถอยหลัง
-        if (!isAdShowing && !idleTimeout && activeAds.length > 0) {
-            idleTimeout = setTimeout(() => {
-                idleTimeout = null; // 🌟 สำคัญ: เคลียร์ handle ทิ้งเมื่อทำงานเสร็จ เพื่อให้เริ่มนับใหม่ได้รอบหน้า
-                startScreensaver();
-            }, 1000); // แสดงภายใน 1 วินาทีหลังจากเครื่องว่าง
-        }
+        if (!isAdShowing && !idleTimeout && activeAds.length > 0) { idleTimeout = setTimeout(() => { idleTimeout = null; startScreensaver(); }, 1000); }
     }
-
-    function startScreensaver() {
-        const screensaver = document.getElementById('cfd-screensaver');
-        if (screensaver && activeAds.length > 0) {
-            screensaver.classList.remove('hidden');
-            currentSlideIndex = 0;
-            showNextSlide();
-        }
-    }
-
+    function startScreensaver() { document.getElementById('cfd-screensaver').classList.remove('hidden'); currentSlideIndex = 0; showNextSlide(); }
     function showNextSlide() {
-        const imgElement = document.getElementById('screensaver-img');
-        if (activeAds.length === 0) { stopScreensaver(); return; }
-
-        const currentAd = activeAds[currentSlideIndex];
-        imgElement.src = currentAd.url; 
-        imgElement.style.opacity = 1;
-
+        const img = document.getElementById('screensaver-img'); if (activeAds.length === 0) { stopScreensaver(); return; }
+        const ad = activeAds[currentSlideIndex]; img.src = ad.url; img.style.opacity = 1;
         clearTimeout(slideTimer);
-        slideTimer = setTimeout(() => {
-            imgElement.style.opacity = 0;
-            setTimeout(() => {
-                currentSlideIndex = (currentSlideIndex + 1) % activeAds.length;
-                showNextSlide();
-            }, 500);
-        }, (currentAd.duration || 5) * 1000);
+        slideTimer = setTimeout(() => { img.style.opacity = 0; setTimeout(() => { currentSlideIndex = (currentSlideIndex + 1) % activeAds.length; showNextSlide(); }, 500); }, (ad.duration || 5) * 1000);
     }
-
-    function stopScreensaver() {
-        clearTimeout(slideTimer);
-        const screensaver = document.getElementById('cfd-screensaver');
-        if (screensaver) screensaver.classList.add('hidden');
-        // รีเซ็ตสถานะโฆษณา
-        const imgElement = document.getElementById('screensaver-img');
-        if (imgElement) imgElement.style.opacity = 0;
-    }
+    function stopScreensaver() { clearTimeout(slideTimer); const ss = document.getElementById('cfd-screensaver'); if (ss) ss.classList.add('hidden'); }
   </script>
 </body>
 </html>
