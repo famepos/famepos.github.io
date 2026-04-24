@@ -119,7 +119,7 @@
   </div>
 
   <script>
-    // ⏰ ส่วน JavaScript คงเดิมตามตรรกะที่คุณต้องการ (แก้ไขจุด .url ให้แล้ว)
+    // ⏰ 1. อัปเดตนาฬิกา
     setInterval(() => {
       document.getElementById('cfd-clock').innerText = new Date().toLocaleTimeString('th-TH');
     }, 1000);
@@ -132,6 +132,7 @@
     let currentSlideIndex = 0;
     let activeAds = [];
 
+    // 🌟 2. ฟังก์ชันดึงข้อมูล (เพิ่มตรรกะเรียกภาพพักหน้าจอที่ถูกต้อง)
     async function fetchCFDState() {
       try {
         const timestamp = new Date().getTime();
@@ -140,7 +141,15 @@
         const data = await response.json();
         
         if (data) {
+            // 🖼️ อัปเดตรายการโฆษณาล่าสุดไว้เสมอ
+            if (data.adsList) {
+                activeAds = data.adsList.filter(ad => ad.enabled === true || ad.enabled === "TRUE");
+            }
+
+            // 📺 1. จัดการเรื่องภาพพักหน้าจอ (ตรวจสอบทุกวินาที)
             handleScreensaverLogic(data);
+
+            // 🛒 2. วาดหน้าจอใหม่เฉพาะตอนข้อมูลเปลี่ยนจริง (กันจอกระพริบ)
             const currentDataJson = JSON.stringify(data);
             if (currentDataJson !== lastDataJson) {
                 lastDataJson = currentDataJson;
@@ -155,19 +164,17 @@
     setInterval(fetchCFDState, 1000);
     window.onload = fetchCFDState;
 
+    // 🎨 3. ฟังก์ชันวาดรายการสินค้าและยอดเงิน
     function renderCFD(data) {
       document.getElementById('cfd-logo').src = "https://i.postimg.cc/SxGCt9N2/logo.png";
       document.getElementById('cfd-shop-name').innerText = data.shopName || "FamePOS";
-
-      if (data.adsList) {
-          activeAds = data.adsList.filter(ad => ad.enabled === true || ad.enabled === "TRUE");
-      }
 
       const idleState = document.getElementById('cfd-idle-state');
       const cartItems = document.getElementById('cfd-cart-items');
       const paymentArea = document.getElementById('cfd-payment-area');
       const successScreen = document.getElementById('cfd-success');
 
+      // หน้าจอชำระเงินสำเร็จ
       if (data.status === 'completed') {
         successScreen.classList.remove('hidden');
         successScreen.classList.add('flex');
@@ -176,10 +183,9 @@
             successScreen.classList.remove('flex');
         }, 4000);
         return;
-      } else {
-        successScreen.classList.add('hidden');
       }
 
+      // หน้าจอว่าง/ตะกร้าว่าง
       if (!data.cart || data.cart.length === 0) {
         idleState.classList.remove('hidden');
         cartItems.classList.add('hidden');
@@ -190,6 +196,7 @@
         return;
       }
 
+      // วาดรายการสินค้า
       idleState.classList.add('hidden');
       cartItems.classList.remove('hidden');
       cartItems.innerHTML = data.cart.map(item => {
@@ -209,6 +216,7 @@
       }).join('');
       cartItems.scrollTop = cartItems.scrollHeight;
 
+      // แสดงยอดเงิน
       document.getElementById('cfd-subtotal').innerText = `฿${data.grandTotal.toFixed(2)}`;
       document.getElementById('cfd-net-total').innerText = `฿${data.netTotal.toFixed(2)}`;
       if (data.discount > 0) {
@@ -218,6 +226,7 @@
           document.getElementById('cfd-discount-row').classList.add('hidden');
       }
 
+      // แสดง QR หรือ ข้อมูลเงินทอน
       if (data.status === 'paying') {
         paymentArea.classList.remove('hidden');
         const payCash = document.getElementById('cfd-pay-cash');
@@ -238,22 +247,28 @@
       }
     }
 
+    // 📺 4. ฟังก์ชันจัดการตรรกะภาพพักหน้าจอ (เวอร์ชันเสถียร)
     function handleScreensaverLogic(data) {
         const screensaver = document.getElementById('cfd-screensaver');
         const isAdShowing = screensaver && !screensaver.classList.contains('hidden');
         const isSuccessShowing = !document.getElementById('cfd-success').classList.contains('hidden');
 
+        // 🛑 ถ้ามีสินค้าในตะกร้า หรือกำลังโชว์หน้า Success -> ปิดโฆษณาทันที
         if ((data.cart && data.cart.length > 0) || isSuccessShowing) {
-            stopScreensaver();
-            clearTimeout(idleTimeout);
-            idleTimeout = null;
+            if (isAdShowing) stopScreensaver();
+            if (idleTimeout) {
+                clearTimeout(idleTimeout);
+                idleTimeout = null;
+            }
             return;
         }
 
-        if (!isAdShowing && !idleTimeout) {
+        // ⏳ ถ้าเครื่องว่าง และยังไม่ได้เปิดโฆษณา และไม่มีคิว Timer ค้างอยู่ -> เริ่มนับถอยหลัง
+        if (!isAdShowing && !idleTimeout && activeAds.length > 0) {
             idleTimeout = setTimeout(() => {
+                idleTimeout = null; // 🌟 สำคัญ: เคลียร์ handle ทิ้งเมื่อทำงานเสร็จ เพื่อให้เริ่มนับใหม่ได้รอบหน้า
                 startScreensaver();
-            }, 800); 
+            }, 1000); // แสดงภายใน 1 วินาทีหลังจากเครื่องว่าง
         }
     }
 
@@ -268,7 +283,8 @@
 
     function showNextSlide() {
         const imgElement = document.getElementById('screensaver-img');
-        if (activeAds.length === 0) return;
+        if (activeAds.length === 0) { stopScreensaver(); return; }
+
         const currentAd = activeAds[currentSlideIndex];
         imgElement.src = currentAd.url; 
         imgElement.style.opacity = 1;
@@ -287,7 +303,9 @@
         clearTimeout(slideTimer);
         const screensaver = document.getElementById('cfd-screensaver');
         if (screensaver) screensaver.classList.add('hidden');
-        idleTimeout = null;
+        // รีเซ็ตสถานะโฆษณา
+        const imgElement = document.getElementById('screensaver-img');
+        if (imgElement) imgElement.style.opacity = 0;
     }
   </script>
 </body>
