@@ -264,22 +264,39 @@ function renderCFD(data) {
     }
     function stopScreensaver() { clearTimeout(slideTimer); const ss = document.getElementById('cfd-screensaver'); if (ss) ss.classList.add('hidden'); }
 
+// 🌟 1. ตัวแปรเก็บสถานะการเปิดเสียงและคิวล่าสุด
+let isAudioEnabled = false; 
+let lastCalledQueue = ""; 
+
+// 📢 2. ฟังก์ชันประกาศคิว (เน้นเสียงผู้หญิง + พูดช้า)
 function announceQueue(queueNo) {
     const popup = document.getElementById('queue-popup');
     document.getElementById('queue-popup-number').innerText = queueNo;
     
+    // โชว์ป๊อปอัพตัวเลข
     popup.classList.remove('hidden');
 
-    if ('speechSynthesis' in window) {
+    if (isAudioEnabled && 'speechSynthesis' in window) {
+        // เคลียร์คิวเสียงเก่าที่อาจค้างอยู่
+        window.speechSynthesis.cancel();
+
         const msg = new SpeechSynthesisUtterance(`ขอเชิญคิวที่ ${queueNo} ค่ะ`);
         
-        // 🌟 ส่วนการเลือกเสียง
+        // 🔍 ค้นหาเสียงผู้หญิงไทย
         const voices = window.speechSynthesis.getVoices();
         
-        // ลองหาเสียง "Google ภาษาไทย" ก่อน เพราะเพราะที่สุด
-        let selectedVoice = voices.find(v => v.name.includes('Google') && v.lang === 'th-TH');
+        // รายชื่อเสียงผู้หญิงไทยที่มักจะมีในเครื่อง
+        const femaleVoiceNames = [
+            "Google ภาษาไทย",     // Chrome (เพราะที่สุด)
+            "Microsoft Premwadee", // Windows / Edge
+            "Microsoft Achara",    // Windows / Edge
+            "Kanya",               // iOS / Mac
+            "Narayisa"             // Android
+        ];
+
+        let selectedVoice = voices.find(v => femaleVoiceNames.some(name => v.name.includes(name)));
         
-        // ถ้าไม่เจอ Google ให้เอาเสียงภาษาไทยอะไรก็ได้ที่มีในเครื่อง
+        // ถ้าไม่เจอตามชื่อ ให้เอาเสียงไทยอันแรกที่เจอ
         if (!selectedVoice) {
             selectedVoice = voices.find(v => v.lang === 'th-TH');
         }
@@ -289,16 +306,35 @@ function announceQueue(queueNo) {
         }
 
         msg.lang = 'th-TH';
-        msg.rate = 0.9;  // ความเร็ว (0.1 - 10)
-        msg.pitch = 1.0; // ระดับเสียงสูง-ต่ำ (0 - 2)
+        msg.rate = 0.7;  // 🌟 ปรับความเร็วให้ช้าลง (0.1 - 10, ปกติคือ 1.0)
+        msg.pitch = 1.1; // ปรับระดับเสียงให้หวานขึ้นเล็กน้อย
         
         window.speechSynthesis.speak(msg);
     }
 
+    // ปิดป๊อปอัพอัตโนมัติ
     setTimeout(() => { popup.classList.add('hidden'); }, 5000);
 }
 
-// 🌟 สำคัญ: ต้องโหลดเสียงเตรียมไว้ก่อน (บางเบราว์เซอร์โหลดช้า)
+// 🔘 3. ฟังก์ชันสำหรับกด "เปิดระบบเสียง" (ต้องทำตอนเปิดหน้าจอครั้งแรก)
+function enableAudioSystem() {
+    isAudioEnabled = true;
+    
+    // ปลดล็อกระบบเสียงโดยการสั่งให้พูดข้อความว่างเปล่า 1 ครั้ง
+    if ('speechSynthesis' in window) {
+        const unlock = new SpeechSynthesisUtterance("");
+        window.speechSynthesis.speak(unlock);
+    }
+
+    // ซ่อนปุ่มเปิดเสียง
+    const btn = document.getElementById('audio-unlock-btn');
+    if(btn) btn.classList.add('hidden');
+
+    // แจ้งเตือนสั้นๆ
+    console.log("ระบบเสียงพร้อมทำงานแล้ว");
+}
+
+// โหลดเสียงเตรียมไว้
 window.speechSynthesis.onvoiceschanged = () => {
     window.speechSynthesis.getVoices();
 };
