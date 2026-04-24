@@ -115,68 +115,101 @@
     setInterval(fetchCFDState, 1000); window.onload = fetchCFDState;
 
     function renderCFD(data) {
-      const standardLayout = document.getElementById('standard-layout');
-      const fullPayment = document.getElementById('full-payment-overlay');
-      const successScreen = document.getElementById('cfd-success');
+  const standardLayout = document.getElementById('standard-layout');
+  const fullPayment = document.getElementById('full-payment-overlay');
+  const successScreen = document.getElementById('cfd-success');
 
-      // 🖼️ ตั้งค่าโฆษณา
-      if (data.adsList) activeAds = data.adsList.filter(ad => ad.enabled === true || ad.enabled === "TRUE");
+  // 🖼️ ตั้งค่าโฆษณา
+  if (data.adsList) activeAds = data.adsList.filter(ad => ad.enabled === true || ad.enabled === "TRUE");
 
-      // 1. จัดการหน้าจอความสำเร็จ
-      if (data.status === 'completed') {
-        successScreen.classList.remove('hidden');
-        fullPayment.classList.add('hidden');
-        setTimeout(() => { successScreen.classList.add('hidden'); }, 4000);
-        return;
-      } else { successScreen.classList.add('hidden'); }
+  // 1. จัดการหน้าจอความสำเร็จ
+  if (data.status === 'completed') {
+    successScreen.classList.remove('hidden');
+    fullPayment.classList.add('hidden');
+    setTimeout(() => { successScreen.classList.add('hidden'); }, 4000);
+    return;
+  }
 
-      // 2. 🌟 จัดการโหมดชำระเงินเต็มหน้าจอ (status === 'paying')
-      if (data.status === 'paying') {
-          standardLayout.classList.add('hidden');
-          fullPayment.classList.remove('hidden');
+  // 💳 2. จัดการโหมดชำระเงินเต็มหน้าจอ (status === 'paying')
+  if (data.status === 'paying') {
+      standardLayout.classList.add('hidden');
+      fullPayment.classList.remove('hidden');
+      
+      const fullCash = document.getElementById('full-pay-cash');
+      const fullQR = document.getElementById('full-pay-qr');
+
+      // 🌟 กรณีที่ 1: เดลิเวอรี่ -> แสดงแค่ชื่อ ไม่โชว์ยอดเงิน/QR
+      if (data.method === 'เดลิเวอรี่' || (data.tableNo && isNaN(data.tableNo))) {
+          fullQR.classList.add('hidden');
+          fullCash.classList.remove('hidden');
           
-          const fullCash = document.getElementById('full-pay-cash');
-          const fullQR = document.getElementById('full-pay-qr');
-
-          if (data.method.includes('เงินสด')) {
-              fullQR.classList.add('hidden');
-              fullCash.classList.remove('hidden');
-              document.getElementById('full-received').innerText = `฿${data.received.toFixed(2)}`;
-              document.getElementById('full-change').innerText = `฿${data.change.toFixed(2)}`;
-          } else {
-              fullCash.classList.add('hidden');
-              fullQR.classList.remove('hidden');
-              document.getElementById('full-qr-amount').innerText = data.netTotal.toFixed(2);
-              if (data.ppNo) document.getElementById('full-qr-img').src = `https://promptpay.io/${data.ppNo}/${data.netTotal.toFixed(2)}.png`;
+          // เปลี่ยนเนื้อหาในส่วน Cash มาแสดงเป็นไอคอนเดลิเวอรี่แทน
+          fullCash.innerHTML = `
+              <div class="text-8xl mb-6">🛵</div>
+              <h2 class="text-4xl font-bold text-orange-500 mb-4">${data.tableNo || 'เดลิเวอรี่'}</h2>
+              <p class="text-2xl text-gray-400">กรุณารอรับอาหารสักครู่ครับ/ค่ะ</p>
+          `;
+      } 
+      // 🌟 กรณีที่ 2: สแกนจ่าย / คนละครึ่ง -> สร้าง QR ด้วยยอดคงเหลือ (remaining)
+      else if (data.method.includes('สแกนจ่าย') || data.method === 'คนละครึ่ง' || data.method.includes('+')) {
+          fullCash.classList.add('hidden');
+          fullQR.classList.remove('hidden');
+          
+          // ดึงยอด remaining มาใช้ ถ้าไม่มีให้ใช้ netTotal
+          const qrAmount = data.remaining || data.netTotal;
+          document.getElementById('full-qr-amount').innerText = qrAmount.toFixed(2);
+          
+          if (data.ppNo) {
+              document.getElementById('full-qr-img').src = `https://promptpay.io/${data.ppNo}/${qrAmount.toFixed(2)}.png`;
           }
-          return; // จบการทำงานในโหมดจ่ายเงิน
-      } else {
-          // โหมดปกติ: โชว์รายการสินค้า
-          fullPayment.classList.add('hidden');
-          standardLayout.classList.remove('hidden');
+      } 
+      // 🌟 กรณีที่ 3: เงินสดปกติ
+      else {
+          fullQR.classList.add('hidden');
+          fullCash.classList.remove('hidden');
+          // คืนค่ารูปแบบเงินสดเดิม
+          fullCash.innerHTML = `
+              <div class="text-8xl mb-6">💵</div>
+              <h2 class="text-3xl font-bold text-gray-700 mb-10">ชำระเงินสด</h2>
+              <div class="w-full max-w-sm space-y-6">
+                  <div class="flex justify-between items-center text-2xl text-gray-400 font-bold uppercase">
+                      <span>รับเงินมา</span><span class="text-gray-800">฿${data.received.toFixed(2)}</span>
+                  </div>
+                  <div class="bg-green-500 text-white p-8 rounded-[2rem] shadow-xl text-center">
+                      <p class="text-sm font-bold uppercase tracking-widest mb-2 opacity-80">เงินทอนที่ได้รับ</p>
+                      <p class="text-7xl font-black leading-none">฿${data.change.toFixed(2)}</p>
+                  </div>
+              </div>
+          `;
       }
+      return; // จบการทำงานในโหมดจ่ายเงิน
+  } else {
+      // โหมดปกติ: โชว์รายการสินค้า
+      fullPayment.classList.add('hidden');
+      standardLayout.classList.remove('hidden');
+  }
 
-      // 3. วาดรายการสินค้าในโหมดปกติ
-      const idleState = document.getElementById('cfd-idle-state');
-      const cartItems = document.getElementById('cfd-cart-items');
-      if (!data.cart || data.cart.length === 0) {
-          idleState.classList.remove('hidden'); cartItems.classList.add('hidden');
-          document.getElementById('cfd-subtotal').innerText = '฿0.00'; document.getElementById('cfd-net-total').innerText = '฿0.00';
-          document.getElementById('cfd-discount-row').classList.add('hidden');
-      } else {
-          idleState.classList.add('hidden'); cartItems.classList.remove('hidden');
-          cartItems.innerHTML = data.cart.map(item => {
-            let opts = item.options ? `<div class="text-[10px] text-gray-400 italic">${Object.values(item.options).join(', ')}</div>` : '';
-            return `<div class="flex justify-between items-center bg-gray-50 p-4 rounded-2xl mb-2"><div class="flex items-center gap-3"><div class="bg-red-600 text-white font-black w-8 h-8 rounded-full flex items-center justify-center text-sm">${item.qty}</div><div><div class="font-bold text-gray-800">${item.name}</div>${opts}</div></div><div class="font-black text-red-600">฿${(item.price * item.qty).toFixed(2)}</div></div>`;
-          }).join('');
-          document.getElementById('cfd-subtotal').innerText = `฿${data.grandTotal.toFixed(2)}`;
-          document.getElementById('cfd-net-total').innerText = `฿${data.netTotal.toFixed(2)}`;
-          if (data.discount > 0) {
-              document.getElementById('cfd-discount-row').classList.remove('hidden');
-              document.getElementById('cfd-discount').innerText = `-฿${data.discount.toFixed(2)}`;
-          } else { document.getElementById('cfd-discount-row').classList.add('hidden'); }
-      }
-    }
+  // 3. วาดรายการสินค้าในโหมดปกติ
+  const idleState = document.getElementById('cfd-idle-state');
+  const cartItems = document.getElementById('cfd-cart-items');
+  if (!data.cart || data.cart.length === 0) {
+      idleState.classList.remove('hidden'); cartItems.classList.add('hidden');
+      document.getElementById('cfd-subtotal').innerText = '฿0.00'; document.getElementById('cfd-net-total').innerText = '฿0.00';
+      document.getElementById('cfd-discount-row').classList.add('hidden');
+  } else {
+      idleState.classList.add('hidden'); cartItems.classList.remove('hidden');
+      cartItems.innerHTML = data.cart.map(item => {
+        let opts = item.options ? `<div class="text-[10px] text-gray-400 italic">${Object.values(item.options).join(', ')}</div>` : '';
+        return `<div class="flex justify-between items-center bg-gray-50 p-4 rounded-2xl mb-2"><div class="flex items-center gap-3"><div class="bg-red-600 text-white font-black w-8 h-8 rounded-full flex items-center justify-center text-sm">${item.qty}</div><div><div class="font-bold text-gray-800">${item.name}</div>${opts}</div></div><div class="font-black text-red-600">฿${(item.price * item.qty).toFixed(2)}</div></div>`;
+      }).join('');
+      document.getElementById('cfd-subtotal').innerText = `฿${data.grandTotal.toFixed(2)}`;
+      document.getElementById('cfd-net-total').innerText = `฿${data.netTotal.toFixed(2)}`;
+      if (data.discount > 0) {
+          document.getElementById('cfd-discount-row').classList.remove('hidden');
+          document.getElementById('cfd-discount').innerText = `-฿${data.discount.toFixed(2)}`;
+      } else { document.getElementById('cfd-discount-row').classList.add('hidden'); }
+  }
+}
 
     // 📺 ระบบพักหน้าจอ
     function handleScreensaverLogic(data) {
