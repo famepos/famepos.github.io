@@ -107,106 +107,129 @@
     }
     setInterval(fetchCFDState, 1000); window.onload = fetchCFDState;
 
-    function renderCFD(data) {
-      const standardLayout = document.getElementById('standard-layout');
-      const fullPayment = document.getElementById('full-payment-overlay');
-      const successScreen = document.getElementById('cfd-success');
+function renderCFD(data) {
+  const standardLayout = document.getElementById('standard-layout');
+  const fullPayment = document.getElementById('full-payment-overlay');
+  const successScreen = document.getElementById('cfd-success');
 
-      if (data.adsList) activeAds = data.adsList.filter(ad => ad.enabled === true || ad.enabled === "TRUE");
-      document.getElementById('cfd-shop-name').innerText = data.shopName || "FamePOS";
+  // 🖼️ ตั้งค่าโฆษณา
+  if (data.adsList) activeAds = data.adsList.filter(ad => ad.enabled === true || ad.enabled === "TRUE");
+  document.getElementById('cfd-shop-name').innerText = data.shopName || "FamePOS";
 
-      if (data.status === 'completed') {
-        successScreen.classList.remove('hidden');
-        fullPayment.classList.add('hidden');
-        setTimeout(() => { successScreen.classList.add('hidden'); }, 4000);
-        return;
-      } else { successScreen.classList.add('hidden'); }
+  // 1. จัดการหน้าจอความสำเร็จ
+  if (data.status === 'completed') {
+    successScreen.classList.remove('hidden');
+    fullPayment.classList.add('hidden');
+    setTimeout(() => { successScreen.classList.add('hidden'); }, 4000);
+    return;
+  } else { 
+    successScreen.classList.add('hidden'); 
+  }
 
-      // 🌟 จัดการข้อมูลตัวเลข (SC, VAT, ส่วนลด) อัปเดตทั้ง 2 หน้าจอ
-      const gTotal = data.grandTotal || 0;
-      const discount = data.discount || 0;
-      const scAmount = data.svcAmount || 0;
-      const vatAmount = data.vatAmount || 0;
-      const netTotal = data.netTotal || 0;
+  // 🌟 จัดการข้อมูลตัวเลข (SC, VAT, ส่วนลด)
+  const gTotal = data.grandTotal || 0;
+  const discount = data.discount || 0;
+  const scAmount = data.svcAmount || 0;
+  const vatAmount = data.vatAmount || 0;
+  const netTotal = data.netTotal || 0;
 
-      // 1. อัปเดต Sidebar (หน้าจอปกติ)
-      document.getElementById('cfd-subtotal').innerText = `฿${gTotal.toFixed(2)}`;
-      document.getElementById('cfd-net-total').innerText = `฿${netTotal.toFixed(2)}`;
-      if(discount>0){ document.getElementById('cfd-discount-row').classList.remove('hidden'); document.getElementById('cfd-discount').innerText = `-฿${discount.toFixed(2)}`; } else { document.getElementById('cfd-discount-row').classList.add('hidden'); }
-      if(scAmount>0){ document.getElementById('cfd-sc-row').classList.remove('hidden'); document.getElementById('cfd-sc-label').innerText = `SC (${data.svcRate}%):`; document.getElementById('cfd-sc-amount').innerText = `฿${scAmount.toFixed(2)}`; } else { document.getElementById('cfd-sc-row').classList.add('hidden'); }
-      if(vatAmount>0){ document.getElementById('cfd-vat-row').classList.remove('hidden'); document.getElementById('cfd-vat-label').innerText = `VAT (${data.vatRate}%):`; document.getElementById('cfd-vat-amount').innerText = `฿${vatAmount.toFixed(2)}`; } else { document.getElementById('cfd-vat-row').classList.add('hidden'); }
+  // 🌟 เช็คว่าควรจะโชว์กล่องสลิปไหม (ถ้ามีส่วนลด หรือ SC หรือ VAT อย่างใดอย่างหนึ่งถึงจะโชว์)
+  const hasExtraFees = discount > 0 || scAmount > 0 || vatAmount > 0;
 
-      // 2. อัปเดตกล่องสรุปยอด (หน้าจอจ่ายเงินเต็มจอ)
-      const fullSubtotal = document.getElementById('full-subtotal');
-      if (fullSubtotal) {
+  // 2. อัปเดต Sidebar (หน้าจอจัดออเดอร์ปกติ)
+  document.getElementById('cfd-subtotal').innerText = `฿${gTotal.toFixed(2)}`;
+  document.getElementById('cfd-net-total').innerText = `฿${netTotal.toFixed(2)}`;
+  if(discount > 0){ document.getElementById('cfd-discount-row').classList.remove('hidden'); document.getElementById('cfd-discount').innerText = `-฿${discount.toFixed(2)}`; } else { document.getElementById('cfd-discount-row').classList.add('hidden'); }
+  if(scAmount > 0){ document.getElementById('cfd-sc-row').classList.remove('hidden'); document.getElementById('cfd-sc-label').innerText = `SC (${data.svcRate}%):`; document.getElementById('cfd-sc-amount').innerText = `฿${scAmount.toFixed(2)}`; } else { document.getElementById('cfd-sc-row').classList.add('hidden'); }
+  if(vatAmount > 0){ document.getElementById('cfd-vat-row').classList.remove('hidden'); document.getElementById('cfd-vat-label').innerText = `VAT (${data.vatRate}%):`; document.getElementById('cfd-vat-amount').innerText = `฿${vatAmount.toFixed(2)}`; } else { document.getElementById('cfd-vat-row').classList.add('hidden'); }
+
+  // 3. อัปเดตกล่องสรุปยอด (หน้าจอชำระเงินเต็มจอ)
+  const fullSubtotal = document.getElementById('full-subtotal');
+  const slipBox = fullSubtotal ? fullSubtotal.closest('.bg-gray-50') : null; // หากล่องที่คลุมสลิปอยู่
+
+  if (fullSubtotal && slipBox) {
+      if (hasExtraFees) {
+          slipBox.classList.remove('hidden'); // โชว์กล่องสลิปถ้ามีค่าธรรมเนียม
           fullSubtotal.innerText = `฿${gTotal.toFixed(2)}`;
           document.getElementById('full-net-total').innerText = `฿${netTotal.toFixed(2)}`;
-          if(discount>0){ document.getElementById('full-discount-row').classList.remove('hidden'); document.getElementById('full-discount').innerText = `-฿${discount.toFixed(2)}`; } else { document.getElementById('full-discount-row').classList.add('hidden'); }
-          if(scAmount>0){ document.getElementById('full-sc-row').classList.remove('hidden'); document.getElementById('full-sc-label').innerText = `SC (${data.svcRate}%):`; document.getElementById('full-sc-amount').innerText = `฿${scAmount.toFixed(2)}`; } else { document.getElementById('full-sc-row').classList.add('hidden'); }
-          if(vatAmount>0){ document.getElementById('full-vat-row').classList.remove('hidden'); document.getElementById('full-vat-label').innerText = `VAT (${data.vatRate}%):`; document.getElementById('full-vat-amount').innerText = `฿${vatAmount.toFixed(2)}`; } else { document.getElementById('full-vat-row').classList.add('hidden'); }
+          if(discount > 0){ document.getElementById('full-discount-row').classList.remove('hidden'); document.getElementById('full-discount').innerText = `-฿${discount.toFixed(2)}`; } else { document.getElementById('full-discount-row').classList.add('hidden'); }
+          if(scAmount > 0){ document.getElementById('full-sc-row').classList.remove('hidden'); document.getElementById('full-sc-label').innerText = `SC (${data.svcRate}%):`; document.getElementById('full-sc-amount').innerText = `฿${scAmount.toFixed(2)}`; } else { document.getElementById('full-sc-row').classList.add('hidden'); }
+          if(vatAmount > 0){ document.getElementById('full-vat-row').classList.remove('hidden'); document.getElementById('full-vat-label').innerText = `VAT (${data.vatRate}%):`; document.getElementById('full-vat-amount').innerText = `฿${vatAmount.toFixed(2)}`; } else { document.getElementById('full-vat-row').classList.add('hidden'); }
+      } else {
+          slipBox.classList.add('hidden'); // 🌟 ซ่อนกล่องสลิปทิ้งไปเลยถ้าไม่มีค่าใดๆ
       }
+  }
 
-      // 💳 โหมดชำระเงินเต็มหน้าจอ
-      if (data.status === 'paying') {
-          standardLayout.classList.add('hidden');
-          fullPayment.classList.remove('hidden');
-          
-          const fullCash = document.getElementById('full-pay-cash');
-          const fullQR = document.getElementById('full-pay-qr');
+  // 💳 โหมดชำระเงินเต็มหน้าจอ
+  if (data.status === 'paying') {
+      standardLayout.classList.add('hidden');
+      fullPayment.classList.remove('hidden');
+      
+      const fullCash = document.getElementById('full-pay-cash');
+      const fullQR = document.getElementById('full-pay-qr');
 
-          // กรณี: เดลิเวอรี่
-          if (data.method === 'เดลิเวอรี่' || (data.tableNo && isNaN(data.tableNo))) {
-              fullQR.classList.add('hidden');
-              fullCash.classList.remove('hidden');
-              fullCash.innerHTML = `<div class="text-8xl mb-4">🛵</div><h2 class="text-3xl font-bold text-orange-500 mb-2">${data.tableNo || 'เดลิเวอรี่'}</h2><p class="text-lg text-gray-400">ออเดอร์จัดส่ง</p>`;
-          } 
-          // กรณี: สแกนจ่าย / คนละครึ่ง / แยกชำระ
-          else if (data.method.includes('สแกนจ่าย') || data.method === 'คนละครึ่ง' || data.method.includes('+')) {
-              fullCash.classList.add('hidden');
-              fullQR.classList.remove('hidden');
-              const qrAmount = data.remaining || data.netTotal; // ดึงยอดที่หารหรือหักแล้วมาใช้
-              document.getElementById('full-qr-amount').innerText = qrAmount.toFixed(2);
-              if (data.ppNo) document.getElementById('full-qr-img').src = `https://promptpay.io/${data.ppNo}/${qrAmount.toFixed(2)}.png`;
-          } 
-          // กรณี: เงินสด
-          else {
-              fullQR.classList.add('hidden');
-              fullCash.classList.remove('hidden');
-              fullCash.innerHTML = `
-                  <div class="text-7xl mb-4">💵</div>
-                  <h2 class="text-2xl font-bold text-gray-700 mb-6">ชำระเงินสด</h2>
-                  <div class="w-full max-w-sm space-y-4">
-                      <div class="flex justify-between items-center text-lg text-gray-400 font-bold uppercase border-b pb-2">
-                          <span>รับเงินมา</span><span class="text-gray-800">฿${data.received.toFixed(2)}</span>
-                      </div>
-                      <div class="bg-green-500 text-white p-6 rounded-3xl shadow-lg text-center">
-                          <p class="text-xs font-bold uppercase tracking-widest mb-1 opacity-90">เงินทอน</p>
-                          <p class="text-5xl font-black leading-none">฿${data.change.toFixed(2)}</p>
-                      </div>
+      // กรณี: เดลิเวอรี่
+      if (data.method === 'เดลิเวอรี่' || (data.tableNo && isNaN(data.tableNo))) {
+          fullQR.classList.add('hidden');
+          fullCash.classList.remove('hidden');
+          fullCash.innerHTML = `<div class="text-8xl mb-4">🛵</div><h2 class="text-3xl font-bold text-orange-500 mb-2">${data.tableNo || 'เดลิเวอรี่'}</h2><p class="text-lg text-gray-400">ออเดอร์จัดส่ง</p>`;
+      } 
+      // กรณี: สแกนจ่าย / คนละครึ่ง / แยกชำระ
+      else if (data.method.includes('สแกนจ่าย') || data.method === 'คนละครึ่ง' || data.method.includes('+')) {
+          fullCash.classList.add('hidden');
+          fullQR.classList.remove('hidden');
+          const qrAmount = data.remaining || data.netTotal; // ดึงยอดที่หารหรือหักแล้วมาใช้
+          document.getElementById('full-qr-amount').innerText = qrAmount.toFixed(2);
+          if (data.ppNo) document.getElementById('full-qr-img').src = `https://promptpay.io/${data.ppNo}/${qrAmount.toFixed(2)}.png`;
+      } 
+      // กรณี: เงินสด
+      else {
+          fullQR.classList.add('hidden');
+          fullCash.classList.remove('hidden');
+          fullCash.innerHTML = `
+              <div class="text-7xl mb-4">💵</div>
+              <h2 class="text-2xl font-bold text-gray-700 mb-6">ชำระเงินสด</h2>
+              <div class="w-full max-w-sm space-y-4">
+                  <div class="flex justify-between items-center text-lg text-gray-400 font-bold uppercase border-b pb-2">
+                      <span>รับเงินมา</span><span class="text-gray-800">฿${data.received.toFixed(2)}</span>
                   </div>
-              `;
-          }
-          return; 
-      } else {
-          // โหมดปกติ
-          fullPayment.classList.add('hidden');
-          standardLayout.classList.remove('hidden');
+                  <div class="bg-green-500 text-white p-6 rounded-3xl shadow-lg text-center">
+                      <p class="text-xs font-bold uppercase tracking-widest mb-1 opacity-90">เงินทอน</p>
+                      <p class="text-5xl font-black leading-none">฿${data.change.toFixed(2)}</p>
+                  </div>
+              </div>
+          `;
       }
+      return; 
+  } else {
+      // โหมดปกติ
+      fullPayment.classList.add('hidden');
+      standardLayout.classList.remove('hidden');
+  }
 
-      // วาดรายการสินค้า
-      const idleState = document.getElementById('cfd-idle-state');
-      const cartItems = document.getElementById('cfd-cart-items');
-      if (!data.cart || data.cart.length === 0) {
-          idleState.classList.remove('hidden'); cartItems.classList.add('hidden');
-      } else {
-          idleState.classList.add('hidden'); cartItems.classList.remove('hidden');
-          cartItems.innerHTML = data.cart.map(item => {
-            let opts = item.options && Object.keys(item.options).length > 0 ? `<div class="text-[10px] text-gray-400 italic">${Object.values(item.options).join(', ')}</div>` : '';
-            return `<div class="flex justify-between items-center bg-gray-50 p-4 rounded-2xl mb-2"><div class="flex items-center gap-3"><div class="bg-red-600 text-white font-black w-8 h-8 rounded-full flex items-center justify-center text-sm">${item.qty}</div><div><div class="font-bold text-gray-800">${item.name}</div>${opts}</div></div><div class="font-black text-red-600">฿${(item.price * item.qty).toFixed(2)}</div></div>`;
-          }).join('');
-          cartItems.scrollTop = cartItems.scrollHeight;
-      }
-    }
+  // 🛒 วาดรายการสินค้า
+  const idleState = document.getElementById('cfd-idle-state');
+  const cartItems = document.getElementById('cfd-cart-items');
+  if (!data.cart || data.cart.length === 0) {
+      idleState.classList.remove('hidden'); 
+      cartItems.classList.add('hidden');
+      
+      // เคลียร์ยอด Sidebar ตอนตะกร้าว่าง
+      document.getElementById('cfd-subtotal').innerText = '฿0.00'; 
+      document.getElementById('cfd-net-total').innerText = '฿0.00';
+      document.getElementById('cfd-discount-row').classList.add('hidden');
+      document.getElementById('cfd-sc-row').classList.add('hidden');
+      document.getElementById('cfd-vat-row').classList.add('hidden');
+  } else {
+      idleState.classList.add('hidden'); 
+      cartItems.classList.remove('hidden');
+      cartItems.innerHTML = data.cart.map(item => {
+        let opts = item.options && Object.keys(item.options).length > 0 ? `<div class="text-[10px] text-gray-400 italic">${Object.values(item.options).join(', ')}</div>` : '';
+        return `<div class="flex justify-between items-center bg-gray-50 p-4 rounded-2xl mb-2"><div class="flex items-center gap-3"><div class="bg-red-600 text-white font-black w-8 h-8 rounded-full flex items-center justify-center text-sm">${item.qty}</div><div><div class="font-bold text-gray-800">${item.name}</div>${opts}</div></div><div class="font-black text-red-600">฿${(item.price * item.qty).toFixed(2)}</div></div>`;
+      }).join('');
+      cartItems.scrollTop = cartItems.scrollHeight;
+  }
+}
 
     function handleScreensaverLogic(data) {
         const screensaver = document.getElementById('cfd-screensaver');
