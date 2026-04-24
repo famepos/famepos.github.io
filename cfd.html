@@ -279,34 +279,22 @@ let isAudioEnabled = false;
 let lastCalledQueue = ""; 
 
 // 📢 2. ฟังก์ชันประกาศคิว (เน้นเสียงผู้หญิง + พูดช้า)
+// 📢 ฟังก์ชันประกาศคิว (ฉบับแก้ทาง iOS/iPad)
 function announceQueue(queueNo) {
     const popup = document.getElementById('queue-popup');
     document.getElementById('queue-popup-number').innerText = queueNo;
-    
-    // โชว์ป๊อปอัพตัวเลข
     popup.classList.remove('hidden');
 
     if (isAudioEnabled && 'speechSynthesis' in window) {
-        // เคลียร์คิวเสียงเก่าที่อาจค้างอยู่
+        // ⚠️ สำคัญมากสำหรับ iOS: ต้อง Cancel ของเก่าก่อนทุกครั้ง
         window.speechSynthesis.cancel();
 
-        const msg = new SpeechSynthesisUtterance(`ขอเชิญคิวที่ ${queueNo} ค่ะ`);
+        const msg = new SpeechSynthesisUtterance("ขอเชิญคิวที่ " + queueNo + " ค่ะ");
         
-        // 🔍 ค้นหาเสียงผู้หญิงไทย
+        // 🔍 ค้นหาเสียงผู้หญิงไทยของ iOS (มักชื่อ Kanya หรือ Siri)
         const voices = window.speechSynthesis.getVoices();
+        let selectedVoice = voices.find(v => (v.name.includes('Kanya') || v.name.includes('Siri')) && v.lang === 'th-TH');
         
-        // รายชื่อเสียงผู้หญิงไทยที่มักจะมีในเครื่อง
-        const femaleVoiceNames = [
-            "Google ภาษาไทย",     // Chrome (เพราะที่สุด)
-            "Microsoft Premwadee", // Windows / Edge
-            "Microsoft Achara",    // Windows / Edge
-            "Kanya",               // iOS / Mac
-            "Narayisa"             // Android
-        ];
-
-        let selectedVoice = voices.find(v => femaleVoiceNames.some(name => v.name.includes(name)));
-        
-        // ถ้าไม่เจอตามชื่อ ให้เอาเสียงไทยอันแรกที่เจอ
         if (!selectedVoice) {
             selectedVoice = voices.find(v => v.lang === 'th-TH');
         }
@@ -316,38 +304,38 @@ function announceQueue(queueNo) {
         }
 
         msg.lang = 'th-TH';
-        msg.rate = 0.7;  // 🌟 ปรับความเร็วให้ช้าลง (0.1 - 10, ปกติคือ 1.0)
-        msg.pitch = 1.1; // ปรับระดับเสียงให้หวานขึ้นเล็กน้อย
+        msg.rate = 0.8;  // iOS เสียงจะค่อนข้างไว ปรับ 0.8 กำลังดีครับ
+        msg.pitch = 1.0; 
         
+        // สั่งให้พูด
         window.speechSynthesis.speak(msg);
     }
 
-    // ปิดป๊อปอัพอัตโนมัติ
     setTimeout(() => { popup.classList.add('hidden'); }, 5000);
 }
 
-// 🔘 3. ฟังก์ชันสำหรับกด "เปิดระบบเสียง" (ต้องทำตอนเปิดหน้าจอครั้งแรก)
+// 🔘 ฟังก์ชันเปิดระบบเสียง (ต้องเรียกภายใน Event คลิกเท่านั้น)
 function enableAudioSystem() {
     isAudioEnabled = true;
     
-    // ปลดล็อกระบบเสียงโดยการสั่งให้พูดข้อความว่างเปล่า 1 ครั้ง
+    // 🌟 เทคนิคพิเศษสำหรับ iOS: สั่งให้พูดข้อความว่างเปล่าทันทีที่คลิก 
+    // เพื่อ "จอง" ช่องสัญญาณเสียงไว้ให้เว็บนี้
     if ('speechSynthesis' in window) {
-        const unlock = new SpeechSynthesisUtterance("");
+        const unlock = new SpeechSynthesisUtterance(" ");
+        unlock.lang = 'th-TH';
         window.speechSynthesis.speak(unlock);
     }
 
-    // ซ่อนปุ่มเปิดเสียง
     const btn = document.getElementById('audio-unlock-btn');
     if(btn) btn.classList.add('hidden');
-
-    // แจ้งเตือนสั้นๆ
-    console.log("ระบบเสียงพร้อมทำงานแล้ว");
+    
+    // แจ้งเตือนยืนยัน
+    Swal.fire({
+        toast: true, position: 'top', icon: 'success',
+        title: 'ระบบเสียงพร้อมใช้งานแล้ว (iOS)',
+        showConfirmButton: false, timer: 2000
+    });
 }
-
-// โหลดเสียงเตรียมไว้
-window.speechSynthesis.onvoiceschanged = () => {
-    window.speechSynthesis.getVoices();
-};
     
   </script>
 </body>
