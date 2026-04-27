@@ -50,9 +50,12 @@
           </div>
       </div>
 
-      <div id="full-pay-qr" class="w-full flex flex-col items-center hidden flex-shrink-0">
-          <h2 class="text-xl font-bold text-gray-500 mb-2">สแกนชำระเงิน</h2>
-          <div class="text-5xl font-black text-red-600 mb-6 leading-none">฿<span id="full-qr-amount">0.00</span></div>
+<div id="full-pay-qr" class="w-full flex flex-col items-center hidden flex-shrink-0">
+    <div id="full-qr-split-info" class="mb-4 hidden"></div> 
+    
+    <h2 class="text-xl font-bold text-gray-500 mb-2">สแกนชำระเงินส่วนที่เหลือ</h2>
+    <div class="text-5xl font-black text-red-600 mb-6 leading-none">฿<span id="full-qr-amount">0.00</span></div>
+  
           <div class="bg-white p-4 rounded-[2.5rem] border-[10px] border-red-50 shadow-xl">
               <img id="full-qr-img" src="" class="w-64 h-64 md:w-80 md:h-80 object-contain">
           </div>
@@ -250,13 +253,29 @@
 
           if (data.method === 'เดลิเวอรี่' || (data.tableNo && isNaN(data.tableNo))) {
               fullQR.classList.add('hidden'); fullCash.classList.remove('hidden');
-              fullCash.innerHTML = `<div class="text-8xl mb-4">🛵</div><h2 class="text-3xl font-bold text-orange-500 mb-2">${data.tableNo || 'เดลิเวอรี่'}</h2>`;
-          } else if (data.method.includes('สแกนจ่าย') || data.method === 'คนละครึ่ง' || data.method.includes('+')) {
-              fullCash.classList.add('hidden'); fullQR.classList.remove('hidden');
-              const qrAmount = data.remaining || data.netTotal;
-              document.getElementById('full-qr-amount').innerText = qrAmount.toFixed(2);
-              if (data.ppNo) document.getElementById('full-qr-img').src = "https://promptpay.io/" + data.ppNo + "/" + qrAmount.toFixed(2) + ".png";
+         } else if (data.method.includes('สแกนจ่าย') || data.method === 'คนละครึ่ง' || data.method.includes('+')) {
+          fullCash.classList.add('hidden');
+          fullQR.classList.remove('hidden');
+          
+          const qrAmount = data.remaining || data.netTotal;
+          document.getElementById('full-qr-amount').innerText = qrAmount.toFixed(2);
+
+          // 🌟 ส่วนที่แก้ไข: ตรวจสอบและแสดงยอดชำระส่วนแรก
+          const splitInfo = document.getElementById('full-qr-split-info');
+          if (data.method.includes('+')) {
+              // ดึงค่า data.received มาแสดงเป็นยอดแรกที่จ่ายไปแล้ว
+              splitInfo.innerHTML = `
+                <div class="bg-orange-50 border border-orange-200 px-4 py-2 rounded-2xl text-center">
+<p class="text-[10px] text-orange-400 font-bold uppercase">ชำระยอดแรกแล้ว (${data.method.split('+')[0].trim()})</p>                   <p class="text-lg font-bold text-orange-600">฿${(data.received || 0).toFixed(2)}</p>
+                </div>
+              `;
+              splitInfo.classList.remove('hidden');
           } else {
+              splitInfo.classList.add('hidden');
+          }
+
+          if (data.ppNo) document.getElementById('full-qr-img').src = "https://promptpay.io/" + data.ppNo + "/" + qrAmount.toFixed(2) + ".png";
+      }else {
               fullQR.classList.add('hidden'); fullCash.classList.remove('hidden');
 fullCash.innerHTML = `
     <div class="text-7xl mb-4">💵</div>
