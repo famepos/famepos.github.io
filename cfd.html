@@ -33,12 +33,23 @@
     </button>
   </div>
 
-  <div id="full-payment-overlay" class="fixed inset-0 bg-white z-[150] flex flex-col items-center justify-center p-6 hidden animate-fade-in overflow-y-auto">
+  <div id="full-payment-overlay" class="fixed inset-0 bg-white z-[150] flex flex-col items-center justify-center p-6 hidden animate-fade-in overflow-y-auto text-center">
       
-      <div id="full-pay-app" class="w-full flex flex-col items-center hidden">
+      <div id="full-pay-delivery" class="w-full flex flex-col items-center hidden animate-fade-in">
+          <h2 class="text-2xl font-bold text-gray-400 mb-6 uppercase tracking-widest">เดลิเวอรี่</h2>
+          <div class="text-[7rem] font-black text-red-600 mb-2 leading-none animate-pulse">กำลังเตรียมอาหาร</div>
+          <p class="text-gray-400 text-lg font-medium mb-10">กรุณารออาหารสักครู่</p>
+          <div class="flex items-center gap-4 text-blue-500 font-bold text-2xl mb-12">
+              <span class="text-3xl">📢</span> 
+              <span>ประเภทเดลิเวอรี่ : <span id="del-info-val">-</span></span>
+          </div>
+          <p class="text-gray-400 font-bold text-xl italic">ขอบคุณที่ใช้บริการครับ/ค่ะ</p>
+      </div>
+
+      <div id="full-pay-app" class="w-full flex flex-col items-center hidden animate-fade-in">
           <h2 id="app-name-display" class="text-xl font-bold text-gray-400 mb-2 uppercase tracking-widest">Payment Status</h2>
           
-          <div id="app-cash-box" class="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-lg w-full max-w-sm space-y-4 mb-6 hidden">
+          <div id="app-cash-box" class="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-lg w-full max-w-sm space-y-4 mb-6 hidden text-left">
               <div class="flex justify-between items-center text-gray-400 font-bold uppercase text-xs">
                   <span>ชำระเงินสดมา:</span>
                   <span id="app-cash-val" class="text-gray-700 text-lg font-bold">฿0.00</span>
@@ -49,26 +60,33 @@
               </div>
           </div>
 
-          <div id="qr-image-container" class="hidden flex-col items-center mb-4">
+          <div id="qr-image-container" class="mb-4">
               <div class="bg-white p-4 rounded-[2.5rem] border-[10px] border-red-50 shadow-xl">
                   <img id="full-qr-img" src="" class="w-64 h-64 md:w-80 md:h-80 object-contain">
               </div>
           </div>
 
-          <div id="app-info-msg" class="flex items-center gap-3 text-blue-500 font-bold mb-4 text-lg">
-             <span class="text-xl">📢</span> <span id="app-instruction-text">ชำระผ่านแอปกับพนักงาน</span>
-          </div>
-
           <div class="text-gray-400 font-bold text-xs uppercase mb-1">ยอดเงินที่ต้องสแกน</div>
           <div id="app-amount-display" class="text-5xl font-black text-red-600 mb-6 leading-none">฿0.00</div>
-          
           <p class="text-gray-400 font-medium">ขอบคุณที่ใช้บริการครับ/ค่ะ</p>
       </div>
 
-      <div id="full-pay-cash" class="w-full flex flex-col items-center hidden">
-          <div class="text-9xl mb-4">💵</div>
-          <h2 class="text-4xl font-bold text-gray-700 mb-8">สถานะการชำระเงิน</h2>
-          <div id="cash-details-box" class="w-full max-w-md"></div>
+      <div id="full-pay-cash" class="w-full flex flex-col items-center hidden animate-fade-in text-left">
+          <div class="w-full flex flex-col items-center">
+              <div class="text-[10rem] mb-4 text-center">💵</div>
+              <h2 class="text-4xl font-bold text-gray-700 mb-8 text-center">สถานะการชำระเงิน</h2>
+              
+              <div class="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-xl w-full max-w-md space-y-5">
+                  <div class="flex justify-between items-center text-gray-400 font-bold uppercase text-xs">
+                      <span>รับเงินสดมา:</span>
+                      <span id="cash-received-val" class="text-gray-800 text-3xl font-black">฿0.00</span>
+                  </div>
+                  <div class="border-t border-dashed border-gray-200 pt-5 flex justify-between items-center">
+                      <span class="text-green-500 font-bold uppercase text-xs">เงินทอน:</span>
+                      <span id="cash-change-val" class="text-6xl font-black text-green-500">฿0.00</span>
+                  </div>
+              </div>
+          </div>
       </div>
   </div>
 
@@ -85,9 +103,7 @@
         <section class="flex-1 flex flex-col bg-white overflow-hidden lg:border-r border-gray-100">
           <div class="px-6 py-4 border-b border-gray-50 bg-gray-50/50"><h2 class="font-bold text-gray-400 uppercase text-sm tracking-widest">Items Ordered</h2></div>
           <div id="cfd-cart-items" class="flex-1 overflow-y-auto px-6 divide-y divide-gray-100 custom-scrollbar hidden"></div>
-          <div id="cfd-idle-state" class="flex-1 flex flex-col items-center justify-center opacity-30">
-              <div class="text-8xl mb-4">🛍️</div><h2 class="text-2xl font-bold">ยินดีต้อนรับ</h2>
-          </div>
+          <div id="cfd-idle-state" class="flex-1 flex flex-col items-center justify-center opacity-30"><div class="text-8xl mb-4">🛍️</div><h2 class="text-2xl font-bold">ยินดีต้อนรับ</h2></div>
         </section>
 
         <aside class="w-full lg:w-[400px] bg-white p-8 flex flex-col justify-between">
@@ -97,7 +113,6 @@
               <div id="cfd-sc-row" class="flex justify-between text-gray-400 font-bold text-lg hidden"><span>SC</span><span id="cfd-sc-amount">฿0.00</span></div>
               <div id="cfd-vat-row" class="flex justify-between text-gray-400 font-bold text-lg hidden"><span>VAT</span><span id="cfd-vat-amount">฿0.00</span></div>
             </div>
-            
             <div class="border-t-2 border-gray-100 pt-8">
               <p class="text-sm text-gray-400 font-black uppercase mb-2 tracking-widest">Grand Total</p>
               <span class="text-[6.5rem] font-black text-red-600 leading-none" id="cfd-net-total">฿0.00</span>
@@ -116,16 +131,10 @@
 
   <script>
     const GAS_URL = "https://script.google.com/macros/s/AKfycbxqmIYIYrhEeAMvxFlDY3K4c0iRSXaUxFNrn-TUmouG-nRnmGyvDPocbsK4MGDVz_ZEBQ/exec";
-    let lastDataJson = ""; 
-    let lastCalledQueue = ""; 
-    let isAudioEnabled = false;
+    let lastDataJson = ""; let lastCalledQueue = ""; let isAudioEnabled = false;
 
-    // ระบบนาฬิกา
-    setInterval(() => { 
-        document.getElementById('cfd-clock').innerText = new Date().toLocaleTimeString('th-TH'); 
-    }, 1000);
+    setInterval(() => { document.getElementById('cfd-clock').innerText = new Date().toLocaleTimeString('th-TH'); }, 1000);
 
-    // ดึงสถานะจาก Server
     async function fetchCFDState() {
       try {
         const response = await fetch(`${GAS_URL}?api=getCFD&t=${Date.now()}`, { cache: 'no-store' });
@@ -136,12 +145,9 @@
                 announceQueue(data.callQueue);
             }
             const currentDataJson = JSON.stringify(data);
-            if (currentDataJson !== lastDataJson) { 
-                lastDataJson = currentDataJson; 
-                renderCFD(data); 
-            }
+            if (currentDataJson !== lastDataJson) { lastDataJson = currentDataJson; renderCFD(data); }
         }
-      } catch (e) { console.warn("Connecting..."); }
+      } catch (e) { console.warn("Syncing..."); }
     }
     
     setInterval(fetchCFDState, 1000);
@@ -170,6 +176,7 @@
       const successScreen = document.getElementById('cfd-success');
       const fullApp = document.getElementById('full-pay-app');
       const fullCash = document.getElementById('full-pay-cash');
+      const fullDel = document.getElementById('full-pay-delivery');
 
       if (data.status === 'completed') {
         successScreen.classList.remove('hidden');
@@ -178,7 +185,6 @@
         return;
       }
 
-      // อัปเดตตัวเลขยอดเงินหน้าจอหลัก
       const gTotal = data.grandTotal || 0;
       const netTotal = data.netTotal || 0;
       document.getElementById('cfd-subtotal').innerText = "฿" + gTotal.toFixed(2);
@@ -188,84 +194,50 @@
           standardLayout.classList.add('hidden');
           fullOverlay.classList.remove('hidden');
 
-          const isSplit = data.method.includes('+');
-
-          // ✅ 1. โหมดแอปฯ / สแกน / คนละครึ่ง (QR ต้องใหญ่กว่าจำนวน)
-          if (data.method.includes('คนละครึ่ง') || data.method.includes('เป๋าตัง') || data.method.includes('สแกนจ่าย')) {
-              fullApp.classList.remove('hidden');
-              fullCash.classList.add('hidden');
+          // ✅ 1. โหมดเดลิเวอรี่ (เงื่อนไขต้องมาอันแรกสุด)
+          if (data.method === 'เดลิเวอรี่' || (data.tableNo && isNaN(data.tableNo))) {
+              fullDel.classList.remove('hidden'); fullApp.classList.add('hidden'); fullCash.classList.add('hidden');
+              document.getElementById('del-info-val').innerText = data.tableNo || '-';
+          } 
+          // ✅ 2. โหมดแอปฯ / สแกน / คนละครึ่ง
+          else if (data.method.includes('คนละครึ่ง') || data.method.includes('เป๋าตัง') || data.method.includes('สแกนจ่าย')) {
+              fullApp.classList.remove('hidden'); fullDel.classList.add('hidden'); fullCash.classList.add('hidden');
               
-              const qrContainer = document.getElementById('qr-image-container');
-              const cashBox = document.getElementById('app-cash-box');
-
-              // เปลี่ยนชื่อหัวข้อตามวิธีจ่าย
+              const isSplit = data.method.includes('+');
               document.getElementById('app-name-display').innerText = data.method.includes('คนละครึ่ง') ? "แอปเป๋าตัง (คนละครึ่ง)" : "Payment Status";
               document.getElementById('app-amount-display').innerText = "฿" + (data.remaining || netTotal).toFixed(2);
               
-              // กล่องรับเงินสด (จะแสดงเฉพาะเมื่อจ่ายแบบแยกช่องทาง)
               if (isSplit) {
-                  cashBox.classList.remove('hidden');
+                  document.getElementById('app-cash-box').classList.remove('hidden');
                   document.getElementById('app-cash-val').innerText = "฿" + (data.received || 0).toFixed(2);
                   document.getElementById('app-change-val').innerText = "฿" + (data.change || 0).toFixed(2);
               } else {
-                  cashBox.classList.add('hidden');
+                  document.getElementById('app-cash-box').classList.add('hidden');
               }
 
-              // แสดง QR Code (ขยายขนาดใหญ่เป็นตัวเอกของหน้า)
-              if (data.method.includes('สแกนจ่าย')) {
-                  qrContainer.classList.remove('hidden');
-                  const qrAmt = data.remaining || netTotal;
-                  if (data.ppNo) document.getElementById('full-qr-img').src = `https://promptpay.io/${data.ppNo}/${qrAmt.toFixed(2)}.png`;
-              } else {
-                  qrContainer.classList.add('hidden');
-              }
+              const qrAmt = data.remaining || netTotal;
+              if (data.ppNo) document.getElementById('full-qr-img').src = `https://promptpay.io/${data.ppNo}/${qrAmt.toFixed(2)}.png`;
           } 
-          // ✅ 2. โหมดเงินสดปกติ
+          // ✅ 3. โหมดเงินสดปกติ
           else {
-              fullCash.classList.remove('hidden');
-              fullApp.classList.add('hidden');
-              document.getElementById('cash-details-box').innerHTML = `
-                <div class="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-xl space-y-5 text-left animate-fade-in">
-                    <div class="flex justify-between items-center text-gray-400 font-bold uppercase text-xs">
-                        <span>วิธีชำระเงิน:</span>
-                        <span class="text-blue-500 text-lg">${data.method}</span>
-                    </div>
-                    <div class="flex justify-between items-center text-gray-400 font-bold uppercase text-xs">
-                        <span>รับเงินสดมา:</span>
-                        <span class="text-gray-800 text-3xl font-black">฿${(data.received || 0).toFixed(2)}</span>
-                    </div>
-                    <div class="border-t border-dashed border-gray-200 pt-5 flex justify-between items-center">
-                        <span class="text-green-500 font-bold uppercase text-xs">เงินทอน:</span>
-                        <span class="text-6xl font-black text-green-500 leading-none">฿${(data.change || 0).toFixed(2)}</span>
-                    </div>
-                </div>`;
+              fullCash.classList.remove('hidden'); fullApp.classList.add('hidden'); fullDel.classList.add('hidden');
+              document.getElementById('cash-received-val').innerText = "฿" + (data.received || 0).toFixed(2);
+              document.getElementById('cash-change-val').innerText = "฿" + (data.change || 0).toFixed(2);
           }
       } else {
-          fullOverlay.classList.add('hidden'); 
-          standardLayout.classList.remove('hidden');
+          fullOverlay.classList.add('hidden'); standardLayout.classList.remove('hidden');
       }
 
-      // 🛒 รายการสินค้า (Toppings + PULSE Style)
+      // 🛒 Render รายการสินค้า
       const cartItems = document.getElementById('cfd-cart-items');
-      const idleState = document.getElementById('cfd-idle-state');
       if (!data.cart || data.cart.length === 0) {
-          idleState.classList.remove('hidden'); cartItems.classList.add('hidden');
+          document.getElementById('cfd-idle-state').classList.remove('hidden'); cartItems.classList.add('hidden');
       } else {
-          idleState.classList.add('hidden'); cartItems.classList.remove('hidden');
+          document.getElementById('cfd-idle-state').classList.add('hidden'); cartItems.classList.remove('hidden');
           cartItems.innerHTML = data.cart.map(item => {
             const optionsArray = item.options ? Object.values(item.options) : [];
             const optionsHtml = optionsArray.length > 0 ? `<div class="text-sm text-gray-400 font-normal mt-0.5">- ${optionsArray.join(', ')}</div>` : "";
-            return `
-              <div class="flex justify-between items-center py-6">
-                  <div class="flex items-center gap-5">
-                      <div class="bg-red-600 text-white font-bold w-12 h-12 rounded-full flex items-center justify-center text-lg flex-shrink-0">${item.qty}</div>
-                      <div>
-                          <div class="font-bold text-2xl text-gray-800 leading-tight">${item.name}</div>
-                          ${optionsHtml}
-                      </div>
-                  </div>
-                  <div class="font-bold text-gray-900 text-2xl ml-4">฿${(item.price * item.qty).toFixed(2)}</div>
-              </div>`;
+            return `<div class="flex justify-between items-center py-6"><div class="flex items-center gap-5"><div class="bg-red-600 text-white font-bold w-12 h-12 rounded-full flex items-center justify-center text-lg flex-shrink-0">${item.qty}</div><div><div class="font-bold text-2xl text-gray-800 leading-tight">${item.name}</div>${optionsHtml}</div></div><div class="font-bold text-gray-900 text-2xl ml-4">฿${(item.price * item.qty).toFixed(2)}</div></div>`;
           }).join('');
           cartItems.scrollTop = cartItems.scrollHeight;
       }
