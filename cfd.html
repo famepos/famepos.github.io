@@ -190,46 +190,49 @@
           standardLayout.classList.add('hidden');
           fullPayment.classList.remove('hidden');
 
-   // 🌟 เช็คเงื่อนไขถ้าเป็นแอปฯ (คนละครึ่ง/เป๋าตัง/สแกนจ่าย)
+          // 1. กลุ่มที่จ่ายผ่านแอป (คนละครึ่ง / เป๋าตัง / สแกนจ่าย)
           if (data.method.includes('คนละครึ่ง') || data.method.includes('เป๋าตัง') || data.method.includes('สแกนจ่าย')) {
               fullQR.classList.add('hidden');
               fullCash.classList.add('hidden');
               fullApp.classList.remove('hidden');
 
-              const isSplit = data.method.includes('+'); // เช็คว่าเป็นการจ่ายแยก "เงินสด +" หรือไม่
+              const isSplit = data.method.includes('+'); 
               const cashBox = document.getElementById('app-cash-box');
-              const paymentLabel = document.getElementById('app-payment-label');
 
+              // เปลี่ยนชื่อหัวข้อตามวิธีชำระเงิน
               document.getElementById('app-name').innerText = data.method.includes('คนละครึ่ง') ? "แอปเป๋าตัง" : "สแกนจ่าย";
               document.getElementById('app-amount').innerText = "฿" + (data.remaining || 0).toFixed(2);
               
               if (isSplit) {
-                  // ✅ กรณีจ่ายแยก: โชว์กล่องด้านล่างและใช้คำว่า "รับเงินสด"
                   cashBox.classList.remove('hidden');
-                  paymentLabel.innerText = "รับเงินสด:";
                   document.getElementById('app-cash-received').innerText = "฿" + (data.received || 0).toFixed(2);
                   document.getElementById('app-change').innerText = "฿" + (data.change || 0).toFixed(2);
               } else {
-                  // ✅ กรณีจ่ายผ่านแอปเพียวๆ: ซ่อนกล่องรับเงินสดด้านล่างทิ้งไปเลย เพื่อไม่ให้ลูกค้าสับสน
-                  // เพราะยอดรวมโชว์ตัวใหญ่ด้านบนแล้ว
                   cashBox.classList.add('hidden');
               }
-          }
-          // เงื่อนไขสแกนจ่ายปกติ
-          else if (data.method.includes('สแกนจ่าย')) {
+          } 
+          // 2. กรณีเดลิเวอรี่
+          else if (data.method === 'เดลิเวอรี่' || (data.tableNo && isNaN(data.tableNo))) {
               fullApp.classList.add('hidden');
-              fullCash.classList.add('hidden');
-              fullQR.classList.remove('hidden');
-              document.getElementById('full-qr-amount').innerText = (data.remaining || data.netTotal).toFixed(2);
-              if (data.ppNo) document.getElementById('full-qr-img').src = "https://promptpay.io/" + data.ppNo + "/" + (data.remaining || data.netTotal).toFixed(2) + ".png";
+              fullQR.classList.add('hidden');
+              fullCash.classList.remove('hidden');
+              fullCash.innerHTML = `<div class="text-8xl mb-4">🛵</div><h2 class="text-3xl font-bold text-orange-500 mb-2">${data.tableNo || 'เดลิเวอรี่'}</h2>`;
           }
-          // เงินสดปกติ
+          // 3. กรณีเงินสดปกติ
           else {
               fullApp.classList.add('hidden');
               fullQR.classList.add('hidden');
               fullCash.classList.remove('hidden');
-              fullCash.innerHTML = `<div class="text-9xl mb-4">💵</div><h2 class="text-4xl font-bold text-gray-700 mb-8">ชำระเงินสด</h2><div class="bg-green-500 text-white p-10 rounded-[3rem] text-center"><p class="text-7xl font-black">฿${(data.change || 0).toFixed(2)}</p><p class="text-xl mt-2 font-bold uppercase">เงินทอน</p></div>`;
+              fullCash.innerHTML = `
+                <div class="text-9xl mb-4">💵</div>
+                <h2 class="text-4xl font-bold text-gray-700 mb-8">ชำระเงินสด</h2>
+                <div class="bg-green-500 text-white p-10 rounded-[3rem] text-center">
+                    <p class="text-7xl font-black">฿${(data.change || 0).toFixed(2)}</p>
+                    <p class="text-xl mt-2 font-bold uppercase">เงินทอน</p>
+                </div>`;
           }
+      }
+          
       } else {
           fullPayment.classList.add('hidden');
           standardLayout.classList.remove('hidden');
