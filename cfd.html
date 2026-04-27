@@ -20,7 +20,7 @@
 <body class="h-screen w-screen flex flex-col overflow-hidden bg-white text-gray-800">
 
   <div id="queue-popup" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[400] flex flex-col items-center justify-center hidden transition-opacity duration-300">
-      <div class="bg-white p-12 rounded-[3rem] shadow-2xl flex flex-col items-center text-center animate-bounce border-[12px] border-red-500 min-w-[80%] md:min-w-[400px]">
+      <div class="bg-white p-12 rounded-[3rem] shadow-2xl flex flex-col items-center text-center animate-bounce border-[12px] border-red-50 min-w-[80%] md:min-w-[400px]">
           <div class="text-7xl mb-4">📢</div>
           <h2 class="text-3xl md:text-5xl font-bold text-gray-700 mb-4">ขอเชิญคิวที่</h2>
           <div class="text-8xl md:text-[9rem] font-black text-red-600 leading-none" id="queue-popup-number">000</div>
@@ -36,41 +36,38 @@
   <div id="full-payment-overlay" class="fixed inset-0 bg-white z-[150] flex flex-col items-center justify-center p-6 hidden animate-fade-in overflow-y-auto">
       
       <div id="full-pay-app" class="w-full flex flex-col items-center hidden">
-          <h2 id="app-name-display" class="text-2xl font-bold text-gray-400 mb-2">แอปเป๋าตัง</h2>
+          <h2 id="app-name-display" class="text-2xl font-bold text-gray-400 mb-2 uppercase tracking-widest">Payment</h2>
           <div id="app-amount-display" class="text-[9rem] font-black text-red-600 mb-6 leading-none">฿0.00</div>
           <p class="text-gray-400 mb-8 font-medium">ขอบคุณที่ใช้บริการครับ/ค่ะ</p>
-          <div class="flex items-center gap-3 text-blue-500 font-bold mb-8 text-xl">
-             <span class="text-2xl">📢</span> <span>ชำระผ่านแอปกับพนักงาน</span>
+          
+          <div id="app-info-msg" class="flex items-center gap-3 text-blue-500 font-bold mb-8 text-xl">
+             <span class="text-2xl">📢</span> <span id="app-instruction-text">ชำระผ่านแอปกับพนักงาน</span>
           </div>
+
+          <div id="qr-split-info" class="w-full max-w-md mb-6"></div>
+          
+          <div id="qr-image-container" class="hidden flex-col items-center">
+              <div class="bg-white p-4 rounded-[2.5rem] border-[10px] border-red-50 shadow-xl mb-4">
+                  <img id="full-qr-img" src="" class="w-64 h-64 object-contain">
+              </div>
+          </div>
+
           <div id="app-cash-box" class="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-xl w-full max-w-md space-y-4">
-              <div class="flex justify-between items-center text-gray-400 font-bold uppercase text-sm">
+              <div class="flex justify-between items-center text-gray-400 font-bold uppercase text-xs">
                   <span>ชำระเงินสดมา:</span>
-                  <span id="app-cash-val" class="text-gray-700 text-xl">฿0.00</span>
+                  <span id="app-cash-val" class="text-gray-700 text-xl font-black">฿0.00</span>
               </div>
               <div class="border-t border-dashed border-gray-200 pt-4 flex justify-between items-center">
-                  <span class="text-green-500 font-bold uppercase text-sm">เงินทอน:</span>
+                  <span class="text-green-500 font-bold uppercase text-xs">เงินทอน:</span>
                   <span id="app-change-val" class="text-4xl font-black text-green-500">฿0.00</span>
               </div>
           </div>
       </div>
 
-      <div id="full-pay-qr" class="w-full flex flex-col items-center hidden">
-          <div id="qr-split-info" class="mb-4"></div>
-          <h2 class="text-xl font-bold text-gray-500 mb-2 uppercase tracking-widest">Scan to Pay</h2>
-          <div class="text-6xl font-black text-red-600 mb-6">฿<span id="full-qr-amount">0.00</span></div>
-          <div class="bg-white p-4 rounded-[2.5rem] border-[10px] border-red-50 shadow-xl mb-6">
-              <img id="full-qr-img" src="" class="w-64 h-64 md:w-80 md:h-80 object-contain">
-          </div>
-          <p class="text-gray-400 font-bold animate-pulse">Waiting for Payment...</p>
-      </div>
-
       <div id="full-pay-cash" class="w-full flex flex-col items-center hidden">
           <div class="text-9xl mb-4">💵</div>
-          <h2 class="text-4xl font-bold text-gray-700 mb-8">ชำระเงินสด</h2>
-          <div class="bg-green-500 text-white p-10 rounded-[3rem] text-center min-w-[300px]">
-              <p class="text-7xl font-black">฿<span id="cash-change-display">0.00</span></p>
-              <p class="text-xl mt-2 font-bold uppercase opacity-80">Change</p>
-          </div>
+          <h2 class="text-4xl font-bold text-gray-700 mb-8">สถานะการชำระเงิน</h2>
+          <div id="cash-details-box" class="w-full max-w-md"></div>
       </div>
   </div>
 
@@ -85,7 +82,9 @@
 
       <main class="flex-1 flex flex-col lg:flex-row overflow-hidden">
         <section class="flex-1 flex flex-col bg-white overflow-hidden lg:border-r border-gray-100">
-          <div class="px-6 py-4 border-b border-gray-50 bg-gray-50/50"><h2 class="font-bold text-gray-500 uppercase text-sm tracking-widest">Items Ordered</h2></div>
+          <div class="px-6 py-4 border-b border-gray-50 bg-gray-50/50">
+              <h2 class="font-bold text-gray-500 uppercase text-sm tracking-widest">Items Ordered</h2>
+          </div>
           <div id="cfd-cart-items" class="flex-1 overflow-y-auto px-6 divide-y divide-gray-100 custom-scrollbar hidden"></div>
           <div id="cfd-idle-state" class="flex-1 flex flex-col items-center justify-center opacity-30">
               <div class="text-8xl mb-4">🛍️</div><h2 class="text-2xl font-bold">ยินดีต้อนรับ</h2>
@@ -141,7 +140,7 @@
                 renderCFD(data); 
             }
         }
-      } catch (e) { console.warn("Syncing..."); }
+      } catch (e) { console.warn("Connecting..."); }
     }
     
     setInterval(fetchCFDState, 1000);
@@ -165,20 +164,20 @@
     }
 
     function renderCFD(data) {
-      const fullPayment = document.getElementById('full-payment-overlay');
+      const fullOverlay = document.getElementById('full-payment-overlay');
       const standardLayout = document.getElementById('standard-layout');
-      const fullQR = document.getElementById('full-pay-qr');
-      const fullCash = document.getElementById('full-pay-cash');
+      const successScreen = document.getElementById('cfd-success');
       const fullApp = document.getElementById('full-pay-app');
+      const fullCash = document.getElementById('full-pay-cash');
 
       if (data.status === 'completed') {
-        document.getElementById('cfd-success').classList.remove('hidden');
-        fullPayment.classList.add('hidden');
-        setTimeout(() => document.getElementById('cfd-success').classList.add('hidden'), 4000);
+        successScreen.classList.remove('hidden');
+        fullOverlay.classList.add('hidden');
+        setTimeout(() => successScreen.classList.add('hidden'), 4000);
         return;
       }
 
-      // Update Numbers
+      // Update Shared Totals
       const gTotal = data.grandTotal || 0;
       const netTotal = data.netTotal || 0;
       document.getElementById('cfd-subtotal').innerText = "฿" + gTotal.toFixed(2);
@@ -186,86 +185,106 @@
 
       if (data.status === 'paying') {
           standardLayout.classList.add('hidden');
-          fullPayment.classList.remove('hidden');
+          fullOverlay.classList.remove('hidden');
 
-          // ✅ 1. แบบเป๋าตัง / คนละครึ่ง / สแกนจ่าย
+          const isSplit = data.method.includes('+');
+
+          // ✅ 1. โหมดแอปฯ หรือ สแกนจ่าย
           if (data.method.includes('คนละครึ่ง') || data.method.includes('เป๋าตัง') || data.method.includes('สแกนจ่าย')) {
-              const isSplit = data.method.includes('+');
+              fullApp.classList.remove('hidden');
+              fullCash.classList.add('hidden');
               
-              if (data.method.includes('คนละครึ่ง') || data.method.includes('เป๋าตัง')) {
-                  // --- โหมดแอปเป๋าตัง (คงเดิมตามที่คุณชอบ) ---
-                  fullApp.classList.remove('hidden'); fullQR.classList.add('hidden'); fullCash.classList.add('hidden');
-                  document.getElementById('app-name-display').innerText = data.method.includes('คนละครึ่ง') ? "คนละครึ่ง" : "แอปเป๋าตัง";
-                  document.getElementById('app-amount-display').innerText = "฿" + (data.remaining || 0).toFixed(2);
-                  
-                  if (isSplit) {
-                      document.getElementById('app-cash-box').classList.remove('hidden');
-                      document.getElementById('app-cash-val').innerText = "฿" + (data.received || 0).toFixed(2);
-                      document.getElementById('app-change-val').innerText = "฿" + (data.change || 0).toFixed(2);
-                  } else {
-                      document.getElementById('app-cash-box').classList.add('hidden');
-                  }
-              } else {
-                  // --- 🌟 โหมดสแกนจ่ายปกติ (เพิ่มกล่องสรุปเงินสดตามภาพที่คุณต้องการ) 🌟 ---
-                  fullQR.classList.remove('hidden'); fullApp.classList.add('hidden'); fullCash.classList.add('hidden');
-                  const qrAmt = data.remaining || netTotal;
-                  document.getElementById('full-qr-amount').innerText = qrAmt.toFixed(2);
-                  
-                  const splitInfo = document.getElementById('qr-split-info');
-                  if (isSplit) {
-                      // 🏠 สร้างกล่องสรุปยอดเงินสดมาแสดงด้านบน QR Code ตามแบบภาพที่ 1
-                      splitInfo.innerHTML = `
-                        <div class="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-lg w-full max-w-sm space-y-4 mb-6 animate-fade-in text-left">
-                            <div class="flex justify-between items-center text-gray-500 font-bold uppercase text-xs">
-                                <span>ชำระเงินสดมา:</span>
-                                <span class="text-gray-800 text-lg">฿${(data.received || 0).toFixed(2)}</span>
-                            </div>
-                            <div class="border-t border-dashed border-gray-200 pt-4 flex justify-between items-center">
-                                <span class="text-green-500 font-bold uppercase text-xs">เงินทอน:</span>
-                                <span class="text-3xl font-black text-green-500">฿${(data.change || 0).toFixed(2)}</span>
-                            </div>
-                        </div>
-                      `;
-                      splitInfo.classList.remove('hidden');
-                  } else {
-                      splitInfo.innerHTML = "";
-                      splitInfo.classList.add('hidden');
-                  }
+              const qrImgCont = document.getElementById('qr-image-container');
+              const qrSplitInfo = document.getElementById('qr-split-info');
+              const cashBox = document.getElementById('app-cash-box');
 
-                  if (data.ppNo) document.getElementById('full-qr-img').src = `https://promptpay.io/${data.ppNo}/${qrAmt.toFixed(2)}.png`;
-              }
-          }
-          // ✅ 2. เงินสดปกติ (แสดงยอดรับเงิน และ เงินทอน)
-          else {
-              fullCash.classList.remove('hidden'); 
-              fullQR.classList.add('hidden'); 
-              fullApp.classList.add('hidden');
+              // หัวข้อหลัก
+              document.getElementById('app-name-display').innerText = data.method.includes('คนละครึ่ง') ? "คนละครึ่ง" : (data.method.includes('เป๋าตัง') ? "แอปเป๋าตัง" : "สแกนชำระเงิน");
+              document.getElementById('app-amount-display').innerText = "฿" + (data.remaining || netTotal).toFixed(2);
               
-              fullCash.innerHTML = `
-                <div class="text-8xl mb-4">💵</div>
-                <h2 class="text-3xl font-bold text-gray-700 mb-6">สถานะการชำระเงิน</h2>
-                
-                <div class="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-xl w-full max-w-md space-y-5 text-left animate-fade-in">
-                    <div class="flex justify-between items-center text-gray-400 font-bold uppercase text-xs tracking-wider">
+              // คำแนะนำพนักงาน
+              document.getElementById('app-info-msg').classList.toggle('hidden', data.method.includes('สแกนจ่าย') && !isSplit);
+
+              if (isSplit) {
+                  // แสดงยอดเงินสดที่จ่ายไปแล้วในโหมดแยกจ่าย
+                  qrSplitInfo.innerHTML = `
+                    <div class="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-lg w-full space-y-4 mb-4 text-left animate-fade-in">
+                        <div class="flex justify-between items-center text-gray-400 font-bold uppercase text-xs">
+                            <span>ชำระเงินสดมา:</span>
+                            <span class="text-gray-800 text-lg">฿${(data.received || 0).toFixed(2)}</span>
+                        </div>
+                        <div class="border-t border-dashed border-gray-200 pt-4 flex justify-between items-center">
+                            <span class="text-green-500 font-bold uppercase text-xs">เงินทอน:</span>
+                            <span class="text-3xl font-black text-green-500">฿${(data.change || 0).toFixed(2)}</span>
+                        </div>
+                    </div>`;
+                  cashBox.classList.add('hidden'); // ซ่อนกล่องล่างเพราะไปโชว์ในสลิปบนแล้ว
+              } else {
+                  qrSplitInfo.innerHTML = "";
+                  // ถ้าจ่ายคนละครึ่ง/เป๋าตัง ล้วนๆ ให้โชว์กล่องสรุปเงินสดด้านล่าง (ถ้ามีเงินทอน)
+                  cashBox.classList.toggle('hidden', !data.method.includes('คนละครึ่ง') && !data.method.includes('เป๋าตัง'));
+                  document.getElementById('app-cash-val').innerText = "฿" + (data.received || 0).toFixed(2);
+                  document.getElementById('app-change-val').innerText = "฿" + (data.change || 0).toFixed(2);
+              }
+
+              // แสดง QR Code เฉพาะเมื่อเป็นสแกนจ่าย
+              if (data.method.includes('สแกนจ่าย')) {
+                  qrImgCont.classList.remove('hidden');
+                  const qrAmt = data.remaining || netTotal;
+                  if (data.ppNo) document.getElementById('full-qr-img').src = `https://promptpay.io/${data.ppNo}/${qrAmt.toFixed(2)}.png`;
+              } else {
+                  qrImgCont.classList.add('hidden');
+              }
+          } 
+          // ✅ 2. โหมดเงินสดปกติ
+          else {
+              fullCash.classList.remove('hidden');
+              fullApp.classList.add('hidden');
+              document.getElementById('cash-details-box').innerHTML = `
+                <div class="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-xl space-y-5 text-left animate-fade-in">
+                    <div class="flex justify-between items-center text-gray-400 font-bold uppercase text-xs">
                         <span>วิธีชำระเงิน:</span>
-                        <span class="text-blue-500 text-lg">${data.method || 'เงินสด'}</span>
+                        <span class="text-blue-500 text-lg">${data.method}</span>
                     </div>
-                    
-                    <div class="flex justify-between items-center text-gray-400 font-bold uppercase text-xs tracking-wider">
+                    <div class="flex justify-between items-center text-gray-400 font-bold uppercase text-xs">
                         <span>รับเงินสดมา:</span>
                         <span class="text-gray-800 text-3xl font-black">฿${(data.received || 0).toFixed(2)}</span>
                     </div>
-                    
                     <div class="border-t border-dashed border-gray-200 pt-5 flex justify-between items-center">
-                        <span class="text-green-500 font-bold uppercase text-xs tracking-wider">เงินทอน:</span>
+                        <span class="text-green-500 font-bold uppercase text-xs">เงินทอน:</span>
                         <span class="text-6xl font-black text-green-500 leading-none">฿${(data.change || 0).toFixed(2)}</span>
                     </div>
                 </div>`;
+          }
+      } else {
+          fullOverlay.classList.add('hidden'); standardLayout.classList.remove('hidden');
+      }
+
+      // 🛒 รายการสินค้า
+      const cartItems = document.getElementById('cfd-cart-items');
+      const idleState = document.getElementById('cfd-idle-state');
+      if (!data.cart || data.cart.length === 0) {
+          idleState.classList.remove('hidden'); cartItems.classList.add('hidden');
+      } else {
+          idleState.classList.add('hidden'); cartItems.classList.remove('hidden');
+          cartItems.innerHTML = data.cart.map(item => {
+            const optionsArray = item.options ? Object.values(item.options) : [];
+            const optionsHtml = optionsArray.length > 0 ? `<div class="text-sm text-gray-400 font-normal mt-0.5">- ${optionsArray.join(', ')}</div>` : "";
+            return `
+              <div class="flex justify-between items-center py-6">
+                  <div class="flex items-center gap-5">
+                      <div class="bg-red-600 text-white font-bold w-12 h-12 rounded-full flex items-center justify-center text-lg flex-shrink-0">${item.qty}</div>
+                      <div>
+                          <div class="font-bold text-2xl text-gray-800 leading-tight">${item.name}</div>
+                          ${optionsHtml}
+                      </div>
+                  </div>
+                  <div class="font-bold text-gray-900 text-2xl ml-4">฿${(item.price * item.qty).toFixed(2)}</div>
+              </div>`;
           }).join('');
           cartItems.scrollTop = cartItems.scrollHeight;
       }
     }
-    function stopScreensaver() { document.getElementById('cfd-screensaver')?.classList.add('hidden'); }
   </script>
 </body>
 </html>
