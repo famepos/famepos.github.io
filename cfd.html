@@ -268,12 +268,37 @@
       const cartItems = document.getElementById('cfd-cart-items');
       if (!data.cart || data.cart.length === 0) {
           idleState.classList.remove('hidden'); cartItems.classList.add('hidden');
-      } else {
-          idleState.classList.add('hidden'); cartItems.classList.remove('hidden');
-          cartItems.innerHTML = data.cart.map(item => `<div class="flex justify-between items-center bg-gray-50 p-4 rounded-2xl mb-2"><div class="flex items-center gap-3"><div class="bg-red-600 text-white font-black w-8 h-8 rounded-full flex items-center justify-center text-sm">${item.qty}</div><div class="font-bold">${item.name}</div></div><div class="font-black text-red-600">฿${(item.price * item.qty).toFixed(2)}</div></div>`).join('');
+} else {
+          idleState.classList.add('hidden'); 
+          cartItems.classList.remove('hidden');
+          
+          cartItems.innerHTML = data.cart.map(item => {
+            // 🌟 1. ดึงรายการตัวเลือก (Toppings) มาเตรียมแสดงผล
+            const optionsArray = item.options ? Object.values(item.options) : [];
+            const optionsHtml = optionsArray.length > 0 
+              ? `<div class="text-[11px] text-gray-400 leading-tight mt-0.5 italic">+ ${optionsArray.join(', ')}</div>` 
+              : "";
+
+            // 🌟 2. ส่งคืน HTML ของสินค้าแต่ละรายการ (ปรับให้ชื่อกับท็อปปิ้งอยู่ด้วยกัน)
+            return `
+              <div class="flex justify-between items-center bg-gray-50 p-4 rounded-2xl mb-2 animate-fade-in border border-gray-100 shadow-sm">
+                <div class="flex items-center gap-3 min-w-0">
+                  <div class="bg-red-600 text-white font-black min-w-[32px] h-8 rounded-full flex items-center justify-center text-sm flex-shrink-0">
+                    ${item.qty}
+                  </div>
+                  <div class="min-w-0">
+                    <div class="font-bold text-gray-800 truncate text-base leading-tight">${item.name}</div>
+                    ${optionsHtml}
+                  </div>
+                </div>
+                <div class="font-black text-red-600 text-lg flex-shrink-0 ml-4">
+                  ฿${(item.price * item.qty).toFixed(2)}
+                </div>
+              </div>`;
+          }).join('');
+          
           cartItems.scrollTop = cartItems.scrollHeight;
       }
-    }
 
     // 🌟 5. ระบบ Screensaver
     function handleScreensaverLogic(data) {
