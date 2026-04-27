@@ -193,6 +193,7 @@
               const isSplit = data.method.includes('+');
               
               if (data.method.includes('คนละครึ่ง') || data.method.includes('เป๋าตัง')) {
+                  // --- โหมดแอปเป๋าตัง (คงเดิมตามที่คุณชอบ) ---
                   fullApp.classList.remove('hidden'); fullQR.classList.add('hidden'); fullCash.classList.add('hidden');
                   document.getElementById('app-name-display').innerText = data.method.includes('คนละครึ่ง') ? "คนละครึ่ง" : "แอปเป๋าตัง";
                   document.getElementById('app-amount-display').innerText = "฿" + (data.remaining || 0).toFixed(2);
@@ -205,40 +206,61 @@
                       document.getElementById('app-cash-box').classList.add('hidden');
                   }
               } else {
-                  // QR Scan ปกติ
+                  // --- 🌟 โหมดสแกนจ่ายปกติ (เพิ่มกล่องสรุปเงินสดตามภาพที่คุณต้องการ) 🌟 ---
                   fullQR.classList.remove('hidden'); fullApp.classList.add('hidden'); fullCash.classList.add('hidden');
                   const qrAmt = data.remaining || netTotal;
                   document.getElementById('full-qr-amount').innerText = qrAmt.toFixed(2);
+                  
+                  const splitInfo = document.getElementById('qr-split-info');
+                  if (isSplit) {
+                      // 🏠 สร้างกล่องสรุปยอดเงินสดมาแสดงด้านบน QR Code ตามแบบภาพที่ 1
+                      splitInfo.innerHTML = `
+                        <div class="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-lg w-full max-w-sm space-y-4 mb-6 animate-fade-in text-left">
+                            <div class="flex justify-between items-center text-gray-500 font-bold uppercase text-xs">
+                                <span>ชำระเงินสดมา:</span>
+                                <span class="text-gray-800 text-lg">฿${(data.received || 0).toFixed(2)}</span>
+                            </div>
+                            <div class="border-t border-dashed border-gray-200 pt-4 flex justify-between items-center">
+                                <span class="text-green-500 font-bold uppercase text-xs">เงินทอน:</span>
+                                <span class="text-3xl font-black text-green-500">฿${(data.change || 0).toFixed(2)}</span>
+                            </div>
+                        </div>
+                      `;
+                      splitInfo.classList.remove('hidden');
+                  } else {
+                      splitInfo.innerHTML = "";
+                      splitInfo.classList.add('hidden');
+                  }
+
                   if (data.ppNo) document.getElementById('full-qr-img').src = `https://promptpay.io/${data.ppNo}/${qrAmt.toFixed(2)}.png`;
               }
-          } 
-          // ✅ 2. เงินสดปกติ
-          else {
-              fullCash.classList.remove('hidden'); fullQR.classList.add('hidden'); fullApp.classList.add('hidden');
-              document.getElementById('cash-change-display').innerText = (data.change || 0).toFixed(2);
           }
-      } else {
-          fullPayment.classList.add('hidden'); standardLayout.classList.remove('hidden');
-      }
-
-      // 🛒 Render Cart Items
-      const cartItems = document.getElementById('cfd-cart-items');
-      if (!data.cart || data.cart.length === 0) {
-          document.getElementById('cfd-idle-state').classList.remove('hidden');
-          cartItems.classList.add('hidden');
-      } else {
-          document.getElementById('cfd-idle-state').classList.add('hidden');
-          cartItems.classList.remove('hidden');
-          cartItems.innerHTML = data.cart.map(item => {
-            const opts = item.options ? Object.values(item.options).join(', ') : "";
-            return `
-              <div class="flex justify-between items-center py-6">
-                  <div class="flex items-center gap-4">
-                      <div class="bg-red-600 text-white font-bold w-10 h-10 rounded-full flex items-center justify-center text-sm">${item.qty}</div>
-                      <div><div class="font-bold text-2xl text-gray-800">${item.name}</div><div class="text-sm text-gray-400">${opts}</div></div>
-                  </div>
-                  <div class="font-bold text-gray-800 text-2xl">฿${(item.price * item.qty).toFixed(2)}</div>
-              </div>`;
+          // ✅ 2. เงินสดปกติ (แสดงยอดรับเงิน และ เงินทอน)
+          else {
+              fullCash.classList.remove('hidden'); 
+              fullQR.classList.add('hidden'); 
+              fullApp.classList.add('hidden');
+              
+              fullCash.innerHTML = `
+                <div class="text-8xl mb-4">💵</div>
+                <h2 class="text-3xl font-bold text-gray-700 mb-6">สถานะการชำระเงิน</h2>
+                
+                <div class="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-xl w-full max-w-md space-y-5 text-left animate-fade-in">
+                    <div class="flex justify-between items-center text-gray-400 font-bold uppercase text-xs tracking-wider">
+                        <span>วิธีชำระเงิน:</span>
+                        <span class="text-blue-500 text-lg">${data.method || 'เงินสด'}</span>
+                    </div>
+                    
+                    <div class="flex justify-between items-center text-gray-400 font-bold uppercase text-xs tracking-wider">
+                        <span>รับเงินสดมา:</span>
+                        <span class="text-gray-800 text-3xl font-black">฿${(data.received || 0).toFixed(2)}</span>
+                    </div>
+                    
+                    <div class="border-t border-dashed border-gray-200 pt-5 flex justify-between items-center">
+                        <span class="text-green-500 font-bold uppercase text-xs tracking-wider">เงินทอน:</span>
+                        <span class="text-6xl font-black text-green-500 leading-none">฿${(data.change || 0).toFixed(2)}</span>
+                    </div>
+                </div>`;
           }).join('');
           cartItems.scrollTop = cartItems.scrollHeight;
       }
