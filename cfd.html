@@ -231,7 +231,7 @@
       updateRow('cfd-sc-amount', 'cfd-sc-row', scAmount);
       updateRow('cfd-vat-amount', 'cfd-vat-row', vatAmount);
 
-      // โหมดจ่ายเงิน
+     // โหมดจ่ายเงิน
       if (data.status === 'paying') {
           standardLayout.classList.add('hidden');
           fullPayment.classList.remove('hidden');
@@ -247,21 +247,52 @@
 
           const fullCash = document.getElementById('full-pay-cash');
           const fullQR = document.getElementById('full-pay-qr');
+          const qrImg = document.getElementById('full-qr-img');
+          const qrTitle = fullQR.querySelector('h2');
+
+          // ล้างข้อความเก่าที่อาจค้างจากการ Append (ถ้ามี)
+          const oldMsg = document.getElementById('pao-tang-msg');
+          if (oldMsg) oldMsg.remove();
 
           if (data.method === 'เดลิเวอรี่' || (data.tableNo && isNaN(data.tableNo))) {
-              fullQR.classList.add('hidden'); fullCash.classList.remove('hidden');
+              fullQR.classList.add('hidden'); 
+              fullCash.classList.remove('hidden');
               fullCash.innerHTML = `<div class="text-8xl mb-4">🛵</div><h2 class="text-3xl font-bold text-orange-500 mb-2">${data.tableNo || 'เดลิเวอรี่'}</h2>`;
-          } else if (data.method.includes('สแกนจ่าย') || data.method === 'คนละครึ่ง' || data.method.includes('+')) {
-              fullCash.classList.add('hidden'); fullQR.classList.remove('hidden');
+          
+          } else if (data.method === 'คนละครึ่ง') {
+              fullCash.classList.add('hidden');
+              fullQR.classList.remove('hidden');
+              qrImg.classList.add('hidden'); // ซ่อน QR 
+              qrTitle.innerText = "แอปเป๋าตัง";
+              
               const qrAmount = data.remaining || data.netTotal;
               document.getElementById('full-qr-amount').innerText = qrAmount.toFixed(2);
-              if (data.ppNo) document.getElementById('full-qr-img').src = "https://promptpay.io/" + data.ppNo + "/" + qrAmount.toFixed(2) + ".png";
+              
+              // สร้างข้อความแจ้งลูกค้า (ใส่ ID เพื่อป้องกันการเกิดซ้ำ)
+              const msg = document.createElement('div');
+              msg.id = 'pao-tang-msg';
+              msg.innerHTML = "<p class='text-blue-600 font-black text-xl mt-4 animate-pulse'>📢 ชำระผ่านแอปเป๋าตังกับพนักงาน</p>";
+              fullQR.appendChild(msg);
+
+          } else if (data.method.includes('สแกนจ่าย') || data.method.includes('+')) {
+              fullCash.classList.add('hidden');
+              fullQR.classList.remove('hidden');
+              qrImg.classList.remove('hidden'); // โชว์ QR สำหรับสแกนจ่ายปกติ 
+              qrTitle.innerText = "สแกนชำระเงิน";
+              
+              const qrAmount = data.remaining || data.netTotal;
+              document.getElementById('full-qr-amount').innerText = qrAmount.toFixed(2);
+              if (data.ppNo) qrImg.src = "https://promptpay.io/" + data.ppNo + "/" + qrAmount.toFixed(2) + ".png"; [cite: 59]
+
           } else {
-              fullQR.classList.add('hidden'); fullCash.classList.remove('hidden');
-              fullCash.innerHTML = `<div class="text-7xl mb-4">💵</div><h2 class="text-2xl font-bold text-gray-700 mb-6">ชำระเงินสด</h2><div class="bg-green-500 text-white p-6 rounded-3xl text-center"><p class="text-5xl font-black">฿${data.change.toFixed(2)}</p></div>`;
+              // กรณีเงินสด
+              fullQR.classList.add('hidden'); 
+              fullCash.classList.remove('hidden');
+              fullCash.innerHTML = `<div class="text-7xl mb-4">💵</div><h2 class="text-2xl font-bold text-gray-700 mb-6">ชำระเงินสด</h2><div class="bg-green-500 text-white p-6 rounded-3xl text-center"><p class="text-5xl font-black">฿${data.change.toFixed(2)}</p></div>`; [cite: 61]
           }
       } else {
-          fullPayment.classList.add('hidden'); standardLayout.classList.remove('hidden');
+          fullPayment.classList.add('hidden'); 
+          standardLayout.classList.remove('hidden');
       }
 
       const idleState = document.getElementById('cfd-idle-state');
