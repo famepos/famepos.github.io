@@ -8,16 +8,73 @@
   <title>Customer Display - FamePOS</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap');
     body { font-family: 'Sarabun', sans-serif; background-color: #ffffff; overflow: hidden; }
     .animate-fade-in { animation: fadeIn 0.3s ease-out; }
     @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    /* สไตล์สำหรับ Scrollbar */
     .custom-scrollbar::-webkit-scrollbar { width: 4px; }
     .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-    .custom-scrollbar::-webkit-scrollbar-thumb { background: #fee2e2; border-radius: 10px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 10px; }
   </style>
 </head>
-<body class="h-screen w-screen flex flex-col overflow-hidden bg-gray-50">
+<body class="h-screen w-screen flex flex-col overflow-hidden bg-white text-gray-800">
+
+  <header class="flex-shrink-0 bg-white px-6 py-4 flex justify-between items-center border-b border-gray-100">
+    <div class="flex items-center gap-3">
+      <img id="cfd-logo" src="https://i.postimg.cc/SxGCt9N2/logo.png" class="h-10 w-auto object-contain">
+      <h1 id="cfd-shop-name" class="text-2xl font-bold text-gray-900">FamePOS</h1>
+    </div>
+    <div class="text-red-600 font-medium text-xl font-mono" id="cfd-clock">00:00:00</div>
+  </header>
+
+  <main class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+    
+    <section class="flex-1 flex flex-col bg-white overflow-hidden lg:border-r border-gray-100">
+      <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+        <h2 class="font-bold text-lg text-gray-900">Items Ordered</h2>
+      </div>
+      
+      <div id="cfd-cart-items-container" class="flex-1 overflow-y-auto custom-scrollbar hidden">
+          <div id="cfd-cart-items" class="px-6 divide-y divide-gray-100">
+              </div>
+      </div>
+      
+      <div id="cfd-idle-state" class="flex-1 flex flex-col items-center justify-center opacity-40">
+          <div class="text-7xl mb-4">🛍️</div>
+          <h2 class="text-2xl font-bold text-gray-700">ยินดีต้อนรับ</h2>
+          <p class="text-gray-500 mt-1">รายการสินค้าของคุณจะแสดงที่นี่</p>
+      </div>
+    </section>
+
+    <aside class="w-full lg:w-[420px] bg-white p-6 flex flex-col justify-between">
+        <div class="space-y-3 pt-4">
+            <div class="flex justify-between text-gray-600 text-lg font-medium">
+                <span>Subtotal</span>
+                <span id="cfd-subtotal">฿0.00</span>
+            </div>
+            <div id="cfd-discount-row" class="flex justify-between text-red-500 text-lg font-medium hidden">
+                <span>Discount</span>
+                <span id="cfd-discount">-฿0.00</span>
+            </div>
+            <div id="cfd-sc-row" class="flex justify-between text-gray-600 text-lg font-medium hidden">
+                <span id="cfd-sc-label">Service Charge</span>
+                <span id="cfd-sc-amount">฿0.00</span>
+            </div>
+            <div id="cfd-vat-row" class="flex justify-between text-gray-600 text-lg font-medium hidden">
+                <span id="cfd-vat-label">VAT</span>
+                <span id="cfd-vat-amount">฿0.00</span>
+            </div>
+        </div>
+
+        <div class="border-t border-gray-200 pt-6 mt-6">
+            <div class="flex justify-between items-end">
+                <p class="text-xl text-gray-600 font-bold uppercase tracking-wider">GRAND TOTAL</p>
+                <span class="text-7xl font-black text-red-600 leading-none" id="cfd-net-total">฿0.00</span>
+            </div>
+        </div>
+    </aside>
+  </main>
 
   <div id="queue-popup" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[400] flex flex-col items-center justify-center hidden transition-opacity duration-300">
       <div class="bg-white p-12 rounded-[3rem] shadow-2xl flex flex-col items-center text-center animate-bounce border-[12px] border-red-500 min-w-[80%] md:min-w-[400px]">
@@ -26,30 +83,20 @@
           <div class="text-8xl md:text-[9rem] font-black text-red-600 leading-none" id="queue-popup-number">000</div>
       </div>
   </div>
-
-  <div id="audio-unlock-btn" class="fixed bottom-10 left-1/2 -translate-x-1/2 z-[500]">
-    <button onclick="enableAudioSystem()" class="bg-red-600 text-white px-8 py-4 rounded-full font-bold shadow-2xl animate-pulse flex items-center gap-2 hover:bg-red-700 transition-all">
-        <span>🔊 คลิกเพื่อเปิดระบบเสียงเรียกคิว</span>
-    </button>
-  </div>
-
   <div id="cfd-screensaver" class="fixed inset-0 bg-black z-[200] flex items-center justify-center hidden">
     <img id="screensaver-img" src="" class="w-full h-full object-contain transition-opacity duration-1000 opacity-0">
   </div>
-
   <div id="full-payment-overlay" class="fixed inset-0 bg-white z-[150] flex flex-col items-center justify-center p-6 hidden animate-fade-in overflow-y-auto">
-      
       <div class="bg-gray-50 p-5 rounded-3xl border border-gray-200 shadow-sm w-full max-w-sm mb-6 flex-shrink-0">
           <div class="flex justify-between text-gray-500 font-bold mb-2 text-sm"><span>ยอดรวมสินค้า:</span><span id="full-subtotal">฿0.00</span></div>
-          <div id="full-discount-row" class="flex justify-between text-red-500 font-bold mb-2 text-sm hidden"><span>ส่วนลด:</span><span id="full-discount">-฿0.00</span></div>
-          <div id="full-sc-row" class="flex justify-between text-orange-500 font-bold mb-2 text-sm hidden"><span id="full-sc-label">SC:</span><span id="full-sc-amount">฿0.00</span></div>
-          <div id="full-vat-row" class="flex justify-between text-blue-500 font-bold mb-2 text-sm hidden"><span id="full-vat-label">VAT:</span><span id="full-vat-amount">฿0.00</span></div>
+          <div id="full-discount-row-p" class="flex justify-between text-red-500 font-bold mb-2 text-sm hidden"><span>ส่วนลด:</span><span id="full-discount-p">-฿0.00</span></div>
+          <div id="full-sc-row-p" class="flex justify-between text-orange-500 font-bold mb-2 text-sm hidden"><span id="full-sc-label-p">SC:</span><span id="full-sc-amount-p">฿0.00</span></div>
+          <div id="full-vat-row-p" class="flex justify-between text-blue-500 font-bold mb-2 text-sm hidden"><span id="full-vat-label-p">VAT:</span><span id="full-vat-amount-p">฿0.00</span></div>
           <div class="border-t-2 border-dashed border-gray-300 pt-3 mt-2 flex justify-between items-end">
               <span class="text-sm font-black text-gray-400 uppercase">ยอดชำระสุทธิ</span>
-              <span class="text-3xl font-black text-red-600 leading-none" id="full-net-total">฿0.00</span>
+              <span class="text-3xl font-black text-red-600 leading-none" id="full-net-total-p">฿0.00</span>
           </div>
       </div>
-
       <div id="full-pay-qr" class="w-full flex flex-col items-center hidden flex-shrink-0">
           <div id="full-qr-split-info" class="w-full max-w-sm mb-4"></div>
           <h2 class="text-xl font-bold text-gray-500 mb-2">สแกนชำระเงิน</h2>
@@ -59,42 +106,8 @@
           </div>
           <p class="text-gray-400 font-bold animate-pulse text-sm">ขอบคุณที่ใช้บริการครับ/ค่ะ</p>
       </div>
-
       <div id="full-pay-cash" class="w-full flex flex-col items-center hidden flex-shrink-0"></div>
   </div>
-
-  <div id="standard-layout" class="h-full flex flex-col">
-      <header class="flex-shrink-0 bg-white p-4 flex justify-between items-center border-b border-red-100">
-        <div class="flex items-center gap-3">
-          <img id="cfd-logo" src="https://i.postimg.cc/SxGCt9N2/logo.png" class="h-10 w-auto object-contain">
-          <h1 id="cfd-shop-name" class="text-xl font-bold text-gray-800">FamePOS</h1>
-        </div>
-        <div class="text-red-500 font-bold text-xl font-mono" id="cfd-clock">00:00:00</div>
-      </header>
-
-      <main class="flex-1 flex flex-col lg:flex-row overflow-hidden">
-        <section class="flex-1 flex flex-col bg-white overflow-hidden lg:border-r border-gray-100">
-          <div class="p-4 border-b border-gray-50"><h2 class="font-bold text-red-600">🛒 รายการสินค้าของคุณ</h2></div>
-          <div id="cfd-cart-items" class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar hidden"></div>
-          <div id="cfd-idle-state" class="flex-1 flex flex-col items-center justify-center opacity-30"><div class="text-6xl mb-4">🛍️</div><h2 class="text-xl font-bold">ยินดีต้อนรับ</h2></div>
-        </section>
-
-        <aside class="w-full lg:w-[350px] bg-gray-50 p-4 border-t lg:border-t-0 shadow-inner">
-            <div class="bg-white p-5 rounded-3xl border border-red-100 shadow-sm">
-              <div class="flex justify-between text-gray-500 text-sm font-bold uppercase mb-2"><span>ยอดรวม</span><span id="cfd-subtotal">฿0.00</span></div>
-              <div id="cfd-discount-row" class="flex justify-between text-red-400 text-sm font-bold hidden mb-2"><span>ส่วนลด</span><span id="cfd-discount">-฿0.00</span></div>
-              <div id="cfd-sc-row" class="flex justify-between text-orange-500 text-sm font-bold hidden mb-2"><span id="cfd-sc-label">SC</span><span id="cfd-sc-amount">฿0.00</span></div>
-              <div id="cfd-vat-row" class="flex justify-between text-blue-500 text-sm font-bold hidden mb-2"><span id="cfd-vat-label">VAT</span><span id="cfd-vat-amount">฿0.00</span></div>
-              
-              <div class="border-t-2 border-dashed border-gray-200 pt-4 mt-3">
-                <p class="text-[10px] text-gray-400 font-black uppercase mb-1">ยอดชำระสุทธิ</p>
-                <span class="text-5xl font-black text-red-600 leading-none" id="cfd-net-total">฿0.00</span>
-              </div>
-            </div>
-        </aside>
-      </main>
-  </div>
-
   <div id="cfd-success" class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center hidden animate-fade-in z-[300]">
     <div class="bg-white p-10 rounded-[2.5rem] shadow-2xl flex flex-col items-center border-[10px] border-green-400 max-w-[90%] text-center">
       <div class="text-7xl mb-4">✅</div>
@@ -177,7 +190,9 @@
         setTimeout(() => popup?.classList.add('hidden'), 5000);
     }
 
-    // ฟังก์ชัน Render หลัก
+    // ==============================
+    // ฟังก์ชัน Render หลัก (จัดหน้าใหม่ตามแบบ PULSE)
+    // ==============================
     function renderCFD(data) {
       const standardLayout = document.getElementById('standard-layout');
       const fullPayment = document.getElementById('full-payment-overlay');
@@ -221,23 +236,21 @@
       updateRow('cfd-sc-amount', 'cfd-sc-row', scAmount);
       updateRow('cfd-vat-amount', 'cfd-vat-row', vatAmount);
 
-      // โหมดการชำระเงิน
+      // โหมดการชำระเงิน (Overlay)
       if (data.status === 'paying') {
           standardLayout.classList.add('hidden');
           fullPayment.classList.remove('hidden');
           
           document.getElementById('full-subtotal').innerText = "฿" + gTotal.toFixed(2);
-          document.getElementById('full-net-total').innerText = "฿" + netTotal.toFixed(2);
-          updateRow('full-discount', 'full-discount-row', discount);
-          updateRow('full-sc-amount', 'full-sc-row', scAmount);
-          updateRow('full-vat-amount', 'full-vat-row', vatAmount);
+          document.getElementById('full-net-total-p').innerText = "฿" + netTotal.toFixed(2);
+          updateRow('full-discount-p', 'full-discount-row-p', discount);
+          updateRow('full-sc-amount-p', 'full-sc-row-p', scAmount);
+          updateRow('full-vat-amount-p', 'full-vat-row-p', vatAmount);
 
-          // 1. กรณีเดลิเวอรี่
           if (data.method === 'เดลิเวอรี่' || (data.tableNo && isNaN(data.tableNo))) {
               fullQR.classList.add('hidden'); fullCash.classList.remove('hidden');
               fullCash.innerHTML = `<div class="text-8xl mb-4">🛵</div><h2 class="text-3xl font-bold text-orange-500 mb-2">${data.tableNo || 'เดลิเวอรี่'}</h2>`;
           } 
-          // 2. กรณีสแกนจ่าย หรือ แยกจ่าย (+)
           else if (data.method.includes('สแกนจ่าย') || data.method === 'คนละครึ่ง' || data.method.includes('+')) {
               fullCash.classList.add('hidden');
               fullQR.classList.remove('hidden');
@@ -280,7 +293,6 @@
 
               if (data.ppNo) document.getElementById('full-qr-img').src = "https://promptpay.io/" + data.ppNo + "/" + qrAmount.toFixed(2) + ".png";
           } 
-          // 3. กรณีเงินสดปกติ
           else {
               fullQR.classList.add('hidden'); 
               fullCash.classList.remove('hidden');
@@ -299,26 +311,38 @@
           fullPayment.classList.add('hidden'); standardLayout.classList.remove('hidden');
       }
 
-      // แสดงรายการสินค้าในตะกร้า + ตัวเลือก Topping
+      // ==============================
+      // ส่วนที่ปรับปรุง: แสดงรายการสินค้าแบบ Clean Design (ภาพที่ 2)
+      // ==============================
       const idleState = document.getElementById('cfd-idle-state');
+      const cartItemsContainer = document.getElementById('cfd-cart-items-container');
       const cartItems = document.getElementById('cfd-cart-items');
+      
       if (!data.cart || data.cart.length === 0) {
-          idleState.classList.remove('hidden'); cartItems.classList.add('hidden');
+          idleState.classList.remove('hidden');
+          cartItemsContainer.classList.add('hidden');
       } else {
-          idleState.classList.add('hidden'); cartItems.classList.remove('hidden');
+          idleState.classList.add('hidden');
+          cartItemsContainer.classList.remove('hidden');
+          
           cartItems.innerHTML = data.cart.map(item => {
             const optionsArray = item.options ? Object.values(item.options) : [];
-            const optionsHtml = optionsArray.length > 0 ? `<div class="text-[12px] text-gray-500 mt-1 font-normal leading-tight">- ${optionsArray.join(', ')}</div>` : "";
+            const optionsHtml = optionsArray.length > 0 ? `<div class="text-sm text-gray-500 mt-0.5 font-normal leading-tight">- ${optionsArray.join(', ')}</div>` : "";
+            
+            // ปรับ HTML สำหรับรายการสินค้า (py-4 flex-row items-center)
             return `
-              <div class="flex justify-between items-start bg-gray-50 p-4 rounded-2xl mb-2 shadow-sm border border-gray-100">
-                  <div class="flex items-start gap-3">
-                      <div class="bg-red-600 text-white font-black w-8 h-8 rounded-full flex items-center justify-center text-sm flex-shrink-0 mt-0.5">${item.qty}</div>
-                      <div><div class="font-bold text-gray-800">${item.name}</div>${optionsHtml}</div>
+              <div class="flex justify-between items-center py-4">
+                  <div class="flex items-center gap-3">
+                      <div class="bg-red-600 text-white font-bold w-10 h-10 rounded-full flex items-center justify-center text-sm">${item.qty}</div>
+                      <div class="flex flex-col">
+                          <div class="font-bold text-gray-800 text-lg">${item.name}</div>
+                          ${optionsHtml}
+                      </div>
                   </div>
-                  <div class="font-black text-red-600 text-lg ml-2 whitespace-nowrap">฿${((item.price || 0) * (item.qty || 0)).toFixed(2)}</div>
+                  <div class="font-bold text-red-600 text-lg">฿${((item.price || 0) * (item.qty || 0)).toFixed(2)}</div>
               </div>`;
           }).join('');
-          cartItems.scrollTop = cartItems.scrollHeight;
+          cartItemsContainer.scrollTop = cartItemsContainer.scrollHeight;
       }
     }
 
