@@ -111,8 +111,8 @@
     let slideTimer = null; 
     let currentSlideIndex = 0; 
     let activeAds = [];
-    let lastCalledQueue = ""; // ตัวแปรจำคิวล่าสุด
-    let isAudioEnabled = false; // สถานะการเปิดเสียง
+    let lastCalledQueue = ""; 
+    let isAudioEnabled = false; 
 
     // นาฬิกา
     setInterval(() => { 
@@ -130,7 +130,6 @@
         try {
             const data = JSON.parse(text); 
             if (data) {
-                // เช็คระบบเรียกคิว
                 if (data.callQueue && data.callQueue !== "") {
                     if (data.callQueue !== lastCalledQueue) {
                         lastCalledQueue = data.callQueue;
@@ -155,7 +154,7 @@
     setInterval(fetchCFDState, 1000); 
     window.onload = fetchCFDState;
 
-    // 🌟 3. ระบบเสียงเรียกคิว (ฉบับ iOS/iPad Support)
+    // 🌟 3. ระบบเสียงเรียกคิว
     function enableAudioSystem() {
         isAudioEnabled = true;
         if ('speechSynthesis' in window) {
@@ -164,7 +163,6 @@
         }
         const btn = document.getElementById('audio-unlock-btn');
         if(btn) btn.classList.add('hidden');
-        console.log("Audio System Enabled");
     }
 
     function announceQueue(queueNo) {
@@ -191,7 +189,7 @@
 
     window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
 
-    // 🌟 4. ระบบแสดงผล (Render)
+    // 🌟 4. ระบบแสดงผล (Render) - แก้ไขจุดที่พัง
     function renderCFD(data) {
       const standardLayout = document.getElementById('standard-layout');
       const fullPayment = document.getElementById('full-payment-overlay');
@@ -205,14 +203,15 @@
         fullPayment.classList.add('hidden');
         setTimeout(() => { successScreen.classList.add('hidden'); }, 4000);
         return;
-      } else { successScreen.classList.add('hidden'); }
+      } else { 
+        successScreen.classList.add('hidden'); 
+      }
 
       const gTotal = data.grandTotal || 0;
       const discount = data.discount || 0;
       const scAmount = data.svcAmount || 0;
       const vatAmount = data.vatAmount || 0;
       const netTotal = data.netTotal || 0;
-      const hasExtraFees = discount > 0 || scAmount > 0 || vatAmount > 0;
 
       document.getElementById('cfd-subtotal').innerText = "฿" + gTotal.toFixed(2);
       document.getElementById('cfd-net-total').innerText = "฿" + netTotal.toFixed(2);
@@ -220,7 +219,7 @@
       const updateRow = (id, rowId, val) => {
           const el = document.getElementById(id);
           const row = document.getElementById(rowId);
-          if(row) {
+          if(row && el) {
               if(val > 0) {
                   row.classList.remove('hidden');
                   el.innerText = (id.includes('discount') ? "-฿" : "฿") + val.toFixed(2);
@@ -232,6 +231,7 @@
       updateRow('cfd-sc-amount', 'cfd-sc-row', scAmount);
       updateRow('cfd-vat-amount', 'cfd-vat-row', vatAmount);
 
+      // โหมดจ่ายเงิน
       if (data.status === 'paying') {
           standardLayout.classList.add('hidden');
           fullPayment.classList.remove('hidden');
@@ -244,45 +244,41 @@
 
           const fullCash = document.getElementById('full-pay-cash');
           const fullQR = document.getElementById('full-pay-qr');
+          const qrImg = document.getElementById('full-qr-img');
+          const infoText = fullQR.querySelector('p');
 
           if (data.method === 'เดลิเวอรี่' || (data.tableNo && isNaN(data.tableNo))) {
               fullQR.classList.add('hidden'); fullCash.classList.remove('hidden');
               fullCash.innerHTML = `<div class="text-8xl mb-4">🛵</div><h2 class="text-3xl font-bold text-orange-500 mb-2">${data.tableNo || 'เดลิเวอรี่'}</h2>`;
           } 
           else if (data.method === 'คนละครึ่ง') {
-              // 🌟 1. กรณีคนละครึ่ง: แสดงข้อความเป๋าตังแทนรูป QR
+              // 🌟 กรณีคนละครึ่ง: ซ่อน QR และโชว์ข้อความ
               fullCash.classList.add('hidden'); 
               fullQR.classList.remove('hidden');
-              document.getElementById('full-qr-img').classList.add('hidden'); // ซ่อนรูป
-              const qrAmount = data.remaining || data.netTotal;
-              document.getElementById('full-qr-amount').innerText = qrAmount.toFixed(2);
-              
-              // เปลี่ยนคำโปรยด้านล่างเป็นข้อความที่คุณต้องการ
-              const infoText = fullQR.querySelector('p');
+              if(qrImg) qrImg.classList.add('hidden');
+              document.getElementById('full-qr-amount').innerText = (data.remaining || data.netTotal).toFixed(2);
               if(infoText) {
                   infoText.innerHTML = "กรุณาชำระเงินผ่านแอปเป๋าตังที่พนักงานได้เลยค่ะ/ครับ";
-                  infoText.classList.remove('text-gray-400');
-                  infoText.classList.add('text-orange-600', 'text-xl', 'animate-none');
+                  infoText.className = "text-orange-600 mt-6 font-bold text-xl text-center leading-relaxed";
               }
           }
           else if (data.method.includes('สแกนจ่าย') || data.method.includes('+')) {
-              // 2. กรณีสแกนจ่ายปกติ: แสดงรูป QR Code
               fullCash.classList.add('hidden'); fullQR.classList.remove('hidden');
-              document.getElementById('full-qr-img').classList.remove('hidden');
+              if(qrImg) qrImg.classList.remove('hidden');
               const qrAmount = data.remaining || data.netTotal;
               document.getElementById('full-qr-amount').innerText = qrAmount.toFixed(2);
-              if (data.ppNo) document.getElementById('full-qr-img').src = "https://promptpay.io/" + data.ppNo + "/" + qrAmount.toFixed(2) + ".png";
+              if (data.ppNo && qrImg) qrImg.src = "https://promptpay.io/" + data.ppNo + "/" + qrAmount.toFixed(2) + ".png";
+              if(infoText) infoText.className = "text-gray-400 mt-6 font-bold animate-pulse text-sm";
           } 
           else {
-              // 3. กรณีเงินสด
               fullQR.classList.add('hidden'); fullCash.classList.remove('hidden');
               fullCash.innerHTML = `<div class="text-7xl mb-4">💵</div><h2 class="text-2xl font-bold text-gray-700 mb-6">ชำระเงินสด</h2><div class="bg-green-500 text-white p-6 rounded-3xl text-center"><p class="text-5xl font-black">฿${data.change.toFixed(2)}</p></div>`;
           }
-      }
       } else {
           fullPayment.classList.add('hidden'); standardLayout.classList.remove('hidden');
       }
 
+      // ส่วนการแสดงผลรายการสินค้า
       const idleState = document.getElementById('cfd-idle-state');
       const cartItems = document.getElementById('cfd-cart-items');
       if (!data.cart || data.cart.length === 0) {
@@ -290,32 +286,26 @@
       } else {
           idleState.classList.add('hidden'); 
           cartItems.classList.remove('hidden');
-          
           cartItems.innerHTML = data.cart.map(item => {
             const optionsArray = item.options ? Object.values(item.options) : [];
             const optionsHtml = optionsArray.length > 0 
               ? `<div class="text-[11px] text-gray-400 leading-tight mt-0.5 italic">+ ${optionsArray.join(', ')}</div>` 
               : "";
-
             return `
               <div class="flex justify-between items-center bg-gray-50 p-4 rounded-2xl mb-2 animate-fade-in border border-gray-100 shadow-sm">
                 <div class="flex items-center gap-3 min-w-0">
-                  <div class="bg-red-600 text-white font-black min-w-[32px] h-8 rounded-full flex items-center justify-center text-sm flex-shrink-0">
-                    ${item.qty}
-                  </div>
+                  <div class="bg-red-600 text-white font-black min-w-[32px] h-8 rounded-full flex items-center justify-center text-sm flex-shrink-0">${item.qty}</div>
                   <div class="min-w-0">
                     <div class="font-bold text-gray-800 truncate text-base leading-tight">${item.name}</div>
                     ${optionsHtml}
                   </div>
                 </div>
-                <div class="font-black text-red-600 text-lg flex-shrink-0 ml-4">
-                  ฿${(item.price * item.qty).toFixed(2)}
-                </div>
+                <div class="font-black text-red-600 text-lg flex-shrink-0 ml-4">฿${(item.price * item.qty).toFixed(2)}</div>
               </div>`;
           }).join('');
           cartItems.scrollTop = cartItems.scrollHeight;
       }
-    } // 🌟 เพิ่มปีกกาปิดจุดนี้ที่ขาดไป
+    }
 
     // 🌟 5. ระบบ Screensaver
     function handleScreensaverLogic(data) {
